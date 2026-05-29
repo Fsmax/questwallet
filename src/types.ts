@@ -18,8 +18,7 @@ export interface Task {
   id: string
   title: string
   emoji: string
-  reward: number
-  xpReward: number
+  xpReward: number // баллы за выполнение (растят опыт/уровень)
   doneToday: boolean
 }
 
@@ -37,8 +36,7 @@ export interface SkillTask {
   skillId: string
   title: string
   emoji: string
-  reward: number
-  xpReward: number
+  xpReward: number // баллы за выполнение (растят опыт/уровень и XP навыка)
   doneToday: boolean
 }
 
@@ -103,6 +101,19 @@ export interface Debt {
   settledAt: number | null // когда долг закрыт полностью
 }
 
+/** Дело дня: задача на сегодня со временем и напоминанием. Баллов не даёт. */
+export interface DayTask {
+  id: string
+  title: string
+  emoji: string
+  time: string | null // "HH:mm" либо null (без конкретного времени)
+  reminderEnabled: boolean
+  done: boolean
+  lastRemindedDate: string // логический день "YYYY-MM-DD", '' = ещё не напоминали
+  order: number
+  createdAt: number
+}
+
 export interface NotifyState {
   morning: string
   evening: string
@@ -136,6 +147,7 @@ export interface AppState {
   tasks: Task[]
   skills: Skill[]
   skillTasks: SkillTask[]
+  dayTasks: DayTask[]
   goals: Goal[]
   transactions: Transaction[]
   expenseCategories: ExpenseCategory[]
@@ -143,5 +155,5 @@ export interface AppState {
   debts: Debt[]
 }
 
-export const CURRENT_SCHEMA_VERSION = 2
+export const CURRENT_SCHEMA_VERSION = 3
 export const MAX_TRANSACTIONS_IN_STATE = 200

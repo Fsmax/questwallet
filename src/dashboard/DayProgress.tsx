@@ -3,9 +3,18 @@ import { Swords } from 'lucide-react'
 interface DayProgressProps {
   done: number
   total: number
+  label?: string
+  Icon?: typeof Swords
+  doneMessage?: string
 }
 
-export function DayProgress({ done, total }: DayProgressProps) {
+export function DayProgress({
+  done,
+  total,
+  label = 'Квесты на сегодня',
+  Icon = Swords,
+  doneMessage = '✨ Все квесты дня закрыты',
+}: DayProgressProps) {
   const ratio = total > 0 ? done / total : 0
   const allDone = total > 0 && done === total
 
@@ -13,8 +22,8 @@ export function DayProgress({ done, total }: DayProgressProps) {
     <div className="rounded-2xl p-4 bg-white/5 border border-white/10">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2 text-white/70 font-semibold text-sm">
-          <Swords size={16} className="text-[var(--color-emerald-quest)]" />
-          Квесты на сегодня
+          <Icon size={16} className="text-[var(--color-emerald-quest)]" />
+          {label}
         </div>
         <div className="text-sm tabular-nums">
           <span className={allDone ? 'text-[var(--color-emerald-quest)] font-bold' : 'text-white'}>
@@ -31,7 +40,7 @@ export function DayProgress({ done, total }: DayProgressProps) {
       </div>
       {allDone && (
         <div className="mt-2 text-xs text-[var(--color-emerald-quest)] font-semibold">
-          ✨ Все квесты дня закрыты
+          {doneMessage}
         </div>
       )}
     </div>

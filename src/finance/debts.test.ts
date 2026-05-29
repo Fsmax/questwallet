@@ -39,6 +39,7 @@ function makeState(over: Partial<AppState> = {}): AppState {
     tasks: [],
     skills: [],
     skillTasks: [],
+    dayTasks: [],
     goals: [],
     transactions: [],
     expenseCategories: [],

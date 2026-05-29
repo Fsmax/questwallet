@@ -30,6 +30,7 @@ function makeState(over: Partial<AppState> = {}): AppState {
     tasks: [],
     skills: [],
     skillTasks: [],
+    dayTasks: [],
     goals: [],
     transactions: [],
     expenseCategories: [],
@@ -42,6 +43,9 @@ function makeState(over: Partial<AppState> = {}): AppState {
 describe('getMetricValue', () => {
   it('completed', () => {
     expect(getMetricValue(makeState({ totalCompleted: 42 }), 'completed')).toBe(42)
+  })
+  it('xp — всего баллов', () => {
+    expect(getMetricValue(makeState({ xp: 500 }), 'xp')).toBe(500)
   })
   it('level из xp', () => {
     // 225 xp = уровень 3
@@ -114,5 +118,11 @@ describe('newlyUnlocked', () => {
 
   it('пустой массив если ничего нового', () => {
     expect(newlyUnlocked(makeState())).toEqual([])
+  })
+
+  it('баллы (xp) разблокируют достижение earn_10k', () => {
+    const fresh = newlyUnlocked(makeState({ xp: 500 }))
+    expect(fresh).toContain('earn_10k')
+    expect(fresh).not.toContain('earn_100k')
   })
 })

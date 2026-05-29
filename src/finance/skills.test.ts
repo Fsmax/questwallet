@@ -41,6 +41,7 @@ function makeState(over: Partial<AppState> = {}): AppState {
     tasks: [],
     skills: [],
     skillTasks: [],
+    dayTasks: [],
     goals: [],
     transactions: [],
     expenseCategories: [],
@@ -68,7 +69,6 @@ function makeSkillTask(over: Partial<SkillTask> = {}): SkillTask {
     skillId: 's1',
     title: 'Решить задачу',
     emoji: '🧩',
-    reward: 500,
     xpReward: 25,
     doneToday: false,
     ...over,
@@ -76,17 +76,18 @@ function makeSkillTask(over: Partial<SkillTask> = {}): SkillTask {
 }
 
 describe('applyEarnSkillTask', () => {
-  it('начисляет деньги, общий XP и XP в навык', () => {
+  it('начисляет баллы (общий опыт и опыт навыка), без денег', () => {
     const s = makeState({
       skills: [makeSkill()],
       skillTasks: [makeSkillTask()],
     })
     const r = applyEarnSkillTask(s, 'st1', NOW)
-    expect(r.state.balance).toBe(500)
+    expect(r.state.balance).toBe(0)
+    expect(r.state.totalEarned).toBe(0)
     expect(r.state.xp).toBe(25)
     expect(r.state.skills[0].xp).toBe(25)
+    expect(r.state.totalCompleted).toBe(1)
     expect(r.state.skillTasks[0].doneToday).toBe(true)
-    expect(r.tx.label).toContain('Программирование')
   })
 
   it('двойное выполнение → ошибка', () => {
@@ -110,14 +111,13 @@ describe('applyEarnSkillTask', () => {
 })
 
 describe('applyCancelSkillTask', () => {
-  it('откатывает деньги, общий XP и XP навыка', () => {
+  it('откатывает общий опыт и опыт навыка', () => {
     const s1 = makeState({
       skills: [makeSkill()],
       skillTasks: [makeSkillTask()],
     })
     const { state: s2 } = applyEarnSkillTask(s1, 'st1', NOW)
     const { state: s3 } = applyCancelSkillTask(s2, 'st1')
-    expect(s3.balance).toBe(0)
     expect(s3.xp).toBe(0)
     expect(s3.skills[0].xp).toBe(0)
     expect(s3.skillTasks[0].doneToday).toBe(false)
@@ -141,11 +141,10 @@ describe('applyCancelSkillTask', () => {
       skills: [makeSkill({ xp: 25 })],
       skillTasks: [makeSkillTask({ doneToday: true })],
       tasks: [
-        { id: 't1', title: 'X', emoji: '⚔️', reward: 100, xpReward: 5, doneToday: true },
+        { id: 't1', title: 'X', emoji: '⚔️', xpReward: 5, doneToday: true },
       ],
       streak: 1,
       streakIncrementedToday: true,
-      balance: 500,
       xp: 25,
     })
     const { state } = applyCancelSkillTask(s, 'st1')
@@ -211,7 +210,6 @@ describe('applyAddSkillTask / applyEditSkillTask / applyDeleteSkillTask', () => 
     const s2 = applyAddSkillTask(s, 's1', {
       title: 'Новое',
       emoji: '⭐',
-      reward: 100,
       xpReward: 10,
     })
     expect(s2.skillTasks).toHaveLength(1)
@@ -221,14 +219,14 @@ describe('applyAddSkillTask / applyEditSkillTask / applyDeleteSkillTask', () => 
   it('добавление в несуществующий навык → ошибка', () => {
     const s = makeState()
     expect(() =>
-      applyAddSkillTask(s, 'unknown', { title: 'X', emoji: '⭐', reward: 100, xpReward: 10 }),
+      applyAddSkillTask(s, 'unknown', { title: 'X', emoji: '⭐', xpReward: 10 }),
     ).toThrow(FinanceError)
   })
 
   it('редактирование', () => {
     const s = makeState({ skills: [makeSkill()], skillTasks: [makeSkillTask()] })
-    const s2 = applyEditSkillTask(s, 'st1', { reward: 1000 })
-    expect(s2.skillTasks[0].reward).toBe(1000)
+    const s2 = applyEditSkillTask(s, 'st1', { xpReward: 50 })
+    expect(s2.skillTasks[0].xpReward).toBe(50)
   })
 
   it('удаление задания', () => {

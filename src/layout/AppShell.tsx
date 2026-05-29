@@ -1,12 +1,9 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
-  Home,
-  Swords,
+  CalendarCheck,
   Rocket,
-  Target,
   Wallet,
-  HandCoins,
   Settings as SettingsIcon,
   Sparkles,
   Loader2,
@@ -14,23 +11,14 @@ import {
   X,
 } from 'lucide-react'
 // Экраны грузим лениво — каждый попадает в отдельный чанк, начальный бандл меньше.
-const DashboardScreen = lazy(() =>
-  import('../screens/DashboardScreen').then((m) => ({ default: m.DashboardScreen })),
+const MyDayScreen = lazy(() =>
+  import('../screens/MyDayScreen').then((m) => ({ default: m.MyDayScreen })),
 )
-const QuestsScreen = lazy(() =>
-  import('../screens/QuestsScreen').then((m) => ({ default: m.QuestsScreen })),
+const GrowthScreen = lazy(() =>
+  import('../screens/GrowthScreen').then((m) => ({ default: m.GrowthScreen })),
 )
-const SkillsScreen = lazy(() =>
-  import('../screens/SkillsScreen').then((m) => ({ default: m.SkillsScreen })),
-)
-const GoalsScreen = lazy(() =>
-  import('../screens/GoalsScreen').then((m) => ({ default: m.GoalsScreen })),
-)
-const WalletScreen = lazy(() =>
-  import('../screens/WalletScreen').then((m) => ({ default: m.WalletScreen })),
-)
-const DebtsScreen = lazy(() =>
-  import('../screens/DebtsScreen').then((m) => ({ default: m.DebtsScreen })),
+const FinanceScreen = lazy(() =>
+  import('../screens/FinanceScreen').then((m) => ({ default: m.FinanceScreen })),
 )
 const SettingsScreen = lazy(() =>
   import('../screens/SettingsScreen').then((m) => ({ default: m.SettingsScreen })),
@@ -40,16 +28,17 @@ import { calcLevel } from '../finance/game'
 import { LevelUpToast } from '../game/LevelUpToast'
 import { AchievementToast } from '../achievements/AchievementToast'
 import { useReminders } from '../game/useReminders'
+import { useDayReminders } from '../game/useDayReminders'
+import { Modal } from '../components/Modal'
+import { formatMoney } from '../lib/format'
+import type { AppState } from '../types'
 
-export type Tab = 'home' | 'quests' | 'skills' | 'goals' | 'wallet' | 'debts' | 'settings'
+export type Tab = 'myday' | 'growth' | 'finance' | 'settings'
 
-const MAIN_TABS: { id: Tab; label: string; Icon: typeof Home }[] = [
-  { id: 'home', label: 'Главная', Icon: Home },
-  { id: 'quests', label: 'Квесты', Icon: Swords },
-  { id: 'skills', label: 'Навыки', Icon: Rocket },
-  { id: 'goals', label: 'Цели', Icon: Target },
-  { id: 'wallet', label: 'Кошелёк', Icon: Wallet },
-  { id: 'debts', label: 'Долги', Icon: HandCoins },
+const MAIN_TABS: { id: Tab; label: string; Icon: typeof Rocket }[] = [
+  { id: 'myday', label: 'Мой день', Icon: CalendarCheck },
+  { id: 'growth', label: 'Личный рост', Icon: Rocket },
+  { id: 'finance', label: 'Финансы', Icon: Wallet },
 ]
 
 export function AppShell() {
@@ -61,13 +50,23 @@ export function AppShell() {
 }
 
 function ShellInner() {
-  const { state, status, error, notice, clearNotice, achievementUnlocked, clearAchievementToast } =
-    useAppState()
-  const [tab, setTab] = useState<Tab>('home')
+  const {
+    state,
+    status,
+    error,
+    notice,
+    clearNotice,
+    achievementUnlocked,
+    clearAchievementToast,
+    conflict,
+    resolveConflict,
+  } = useAppState()
+  const [tab, setTab] = useState<Tab>('myday')
   const [levelUp, setLevelUp] = useState<number | null>(null)
   const prevLevelRef = useRef<number | null>(null)
 
   useReminders()
+  useDayReminders()
 
   useEffect(() => {
     if (!state) return
@@ -143,6 +142,13 @@ function ShellInner() {
         )}
         <LevelUpToast level={levelUp} onClose={() => setLevelUp(null)} />
         <AchievementToast achievementId={achievementUnlocked} onClose={clearAchievementToast} />
+        {conflict && state && (
+          <ConflictDialog
+            localState={state}
+            serverState={conflict.serverState}
+            onResolve={resolveConflict}
+          />
+        )}
 
         <main className="flex-1 px-4 lg:px-8 py-6 pb-28 lg:pb-12">
           <div className="mx-auto w-full max-w-[480px] lg:max-w-3xl">
@@ -161,12 +167,9 @@ function ShellInner() {
                     </div>
                   }
                 >
-                  {tab === 'home' && <DashboardScreen />}
-                  {tab === 'quests' && <QuestsScreen />}
-                  {tab === 'skills' && <SkillsScreen />}
-                  {tab === 'goals' && <GoalsScreen />}
-                  {tab === 'wallet' && <WalletScreen />}
-                  {tab === 'debts' && <DebtsScreen />}
+                  {tab === 'myday' && <MyDayScreen />}
+                  {tab === 'growth' && <GrowthScreen />}
+                  {tab === 'finance' && <FinanceScreen />}
                   {tab === 'settings' && <SettingsScreen />}
                 </Suspense>
               </motion.div>
@@ -243,7 +246,7 @@ function SidebarItem({
   onClick,
 }: {
   label: string
-  Icon: typeof Home
+  Icon: typeof Rocket
   active: boolean
   onClick: () => void
 }) {
@@ -286,6 +289,58 @@ function ErrorBanner({ error }: { error: string | null }) {
     <div className="px-3 py-2 rounded-lg bg-[var(--color-coral)]/10 border border-[var(--color-coral)]/30 flex items-center gap-2">
       <AlertCircle className="text-[var(--color-coral)] flex-shrink-0" size={16} />
       <span className="text-sm text-[var(--color-coral)] flex-1">{error}</span>
+    </div>
+  )
+}
+
+function ConflictDialog({
+  localState,
+  serverState,
+  onResolve,
+}: {
+  localState: AppState
+  serverState: AppState
+  onResolve: (keep: 'local' | 'server') => void
+}) {
+  return (
+    // Закрытие без выбора запрещено: решение влияет на данные, поэтому onClose — no-op,
+    // пользователь обязан нажать одну из двух кнопок.
+    <Modal open onClose={() => {}} title="Данные изменились">
+      <div className="space-y-4">
+        <p className="text-sm text-white/80">
+          С другого устройства пришли изменения. Объединить автоматически нельзя — выбери, какую
+          версию оставить. Вторая будет перезаписана.
+        </p>
+        <div className="grid grid-cols-2 gap-2 text-sm">
+          <VersionCard title="Эта (текущая)" state={localState} />
+          <VersionCard title="С другого устройства" state={serverState} />
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => onResolve('local')}
+            className="flex-1 py-3 bg-[var(--color-gold)] text-[var(--color-bg-deep)] font-bold rounded-xl"
+          >
+            Оставить мою
+          </button>
+          <button
+            onClick={() => onResolve('server')}
+            className="flex-1 py-3 bg-white/5 border border-white/10 text-white/80 font-semibold rounded-xl hover:bg-white/10"
+          >
+            Загрузить ту
+          </button>
+        </div>
+      </div>
+    </Modal>
+  )
+}
+
+function VersionCard({ title, state }: { title: string; state: AppState }) {
+  return (
+    <div className="bg-black/30 rounded-xl p-3 space-y-1">
+      <div className="text-white/50 text-xs">{title}</div>
+      <div className="text-white font-bold tabular-nums">{formatMoney(state.balance, state.currency)}</div>
+      <div className="text-white/40 text-xs">Квестов: {state.tasks.length} · Дел: {state.dayTasks.length}</div>
+      <div className="text-white/40 text-xs">Баллы: {state.xp} · Серия: {state.streak}</div>
     </div>
   )
 }

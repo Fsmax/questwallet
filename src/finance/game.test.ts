@@ -5,8 +5,24 @@ import {
   tickStreak,
   visibleStreak,
   dailyResetIfNeeded,
+  hasOtherActivityToday,
 } from './game'
-import type { AppState } from '../types'
+import type { AppState, DayTask } from '../types'
+
+function makeDayTask(over: Partial<DayTask> = {}): DayTask {
+  return {
+    id: 'd1',
+    title: 'Дело',
+    emoji: '📌',
+    time: null,
+    reminderEnabled: false,
+    done: false,
+    lastRemindedDate: '',
+    order: 0,
+    createdAt: 0,
+    ...over,
+  }
+}
 
 function makeState(overrides: Partial<AppState> = {}): AppState {
   return {
@@ -35,6 +51,7 @@ function makeState(overrides: Partial<AppState> = {}): AppState {
     tasks: [],
     skills: [],
     skillTasks: [],
+    dayTasks: [],
     goals: [],
     transactions: [],
     expenseCategories: [],
@@ -160,7 +177,7 @@ describe('dailyResetIfNeeded', () => {
   it('день не поменялся → state не трогаем', () => {
     const state = makeState({
       lastResetDate: '2026-05-28',
-      tasks: [{ id: '1', title: 'a', emoji: '⚔️', reward: 10, xpReward: 10, doneToday: true }],
+      tasks: [{ id: '1', title: 'a', emoji: '⚔️', xpReward: 10, doneToday: true }],
     })
     const r = dailyResetIfNeeded(state, now)
     expect(r).toBe(state)
@@ -171,8 +188,8 @@ describe('dailyResetIfNeeded', () => {
       lastResetDate: '2026-05-27',
       streakIncrementedToday: true,
       tasks: [
-        { id: '1', title: 'a', emoji: '⚔️', reward: 10, xpReward: 10, doneToday: true },
-        { id: '2', title: 'b', emoji: '⚔️', reward: 20, xpReward: 10, doneToday: false },
+        { id: '1', title: 'a', emoji: '⚔️', xpReward: 10, doneToday: true },
+        { id: '2', title: 'b', emoji: '⚔️', xpReward: 10, doneToday: false },
       ],
     })
     const r = dailyResetIfNeeded(state, now)
@@ -185,11 +202,43 @@ describe('dailyResetIfNeeded', () => {
     const state = makeState({
       lastResetDate: '2026-05-27',
       skillTasks: [
-        { id: 'st1', skillId: 's1', title: 'A', emoji: '⭐', reward: 10, xpReward: 5, doneToday: true },
-        { id: 'st2', skillId: 's1', title: 'B', emoji: '⭐', reward: 10, xpReward: 5, doneToday: true },
+        { id: 'st1', skillId: 's1', title: 'A', emoji: '⭐', xpReward: 5, doneToday: true },
+        { id: 'st2', skillId: 's1', title: 'B', emoji: '⭐', xpReward: 5, doneToday: true },
       ],
     })
     const r = dailyResetIfNeeded(state, now)
     expect(r.skillTasks.every((t) => !t.doneToday)).toBe(true)
+  })
+
+  it('новый день → dayTasks.done сбрасываются', () => {
+    const state = makeState({
+      lastResetDate: '2026-05-27',
+      dayTasks: [makeDayTask({ id: 'd1', done: true }), makeDayTask({ id: 'd2', done: true })],
+    })
+    const r = dailyResetIfNeeded(state, now)
+    expect(r.dayTasks.every((t) => !t.done)).toBe(true)
+  })
+})
+
+describe('hasOtherActivityToday', () => {
+  it('нет активности → false', () => {
+    expect(hasOtherActivityToday(makeState())).toBe(false)
+  })
+
+  it('видит выполненный квест', () => {
+    const state = makeState({
+      tasks: [{ id: '1', title: 'a', emoji: '⚔️', xpReward: 10, doneToday: true }],
+    })
+    expect(hasOtherActivityToday(state)).toBe(true)
+  })
+
+  it('видит выполненное дело дня', () => {
+    const state = makeState({ dayTasks: [makeDayTask({ done: true })] })
+    expect(hasOtherActivityToday(state)).toBe(true)
+  })
+
+  it('исключает указанный id', () => {
+    const state = makeState({ dayTasks: [makeDayTask({ id: 'd1', done: true })] })
+    expect(hasOtherActivityToday(state, 'd1')).toBe(false)
   })
 })

@@ -2,6 +2,7 @@ export type AchievementMetric =
   | 'streak'
   | 'level'
   | 'earned'
+  | 'xp' // всего баллов (опыта)
   | 'goals'
   | 'skillLevel'
   | 'completed'
@@ -33,10 +34,10 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: 'level_10', title: 'Опытный', desc: 'Достигни 10 уровня', emoji: '🌟', metric: 'level', target: 10 },
   { id: 'level_25', title: 'Мастер', desc: 'Достигни 25 уровня', emoji: '💫', metric: 'level', target: 25 },
 
-  // Заработок (всего)
-  { id: 'earn_10k', title: 'Первые монеты', desc: 'Заработай 10 000', emoji: '🪙', metric: 'earned', target: 10_000 },
-  { id: 'earn_100k', title: 'Богатей', desc: 'Заработай 100 000', emoji: '💰', metric: 'earned', target: 100_000 },
-  { id: 'earn_1m', title: 'Миллионер', desc: 'Заработай 1 000 000', emoji: '🤑', metric: 'earned', target: 1_000_000 },
+  // Баллы (всего опыта за дисциплину)
+  { id: 'earn_10k', title: 'Первые баллы', desc: 'Набери 500 баллов', emoji: '🪙', metric: 'xp', target: 500 },
+  { id: 'earn_100k', title: 'Копилка опыта', desc: 'Набери 2 500 баллов', emoji: '💰', metric: 'xp', target: 2_500 },
+  { id: 'earn_1m', title: 'Мастер дисциплины', desc: 'Набери 10 000 баллов', emoji: '🤑', metric: 'xp', target: 10_000 },
 
   // Цели
   { id: 'goal_1', title: 'Первая цель', desc: 'Достигни первой цели', emoji: '🎯', metric: 'goals', target: 1 },

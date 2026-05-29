@@ -1,48 +1,52 @@
-import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Check, RotateCcw, Pencil } from 'lucide-react'
-import type { SkillTask } from '../types'
+import { Check, RotateCcw, Pencil, Bell, Clock } from 'lucide-react'
+import type { DayTask } from '../types'
 import { feedbackComplete } from '../lib/feedback'
-import { FloatingReward } from '../quests/FloatingReward'
 
-interface SkillTaskRowProps {
-  task: SkillTask
+interface DayTaskRowProps {
+  task: DayTask
   onComplete: () => void
-  onCancel: () => void
+  onUncomplete: () => void
   onEdit: () => void
 }
 
-export function SkillTaskRow({ task, onComplete, onCancel, onEdit }: SkillTaskRowProps) {
-  const [floating, setFloating] = useState(false)
-
+export function DayTaskRow({ task, onComplete, onUncomplete, onEdit }: DayTaskRowProps) {
   const handleComplete = () => {
-    setFloating(true)
     feedbackComplete()
-    setTimeout(() => setFloating(false), 900)
     onComplete()
   }
 
   return (
     <motion.div
       layout
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ type: 'spring', stiffness: 300, damping: 26 }}
       className={`relative rounded-xl border p-2.5 transition ${
-        task.doneToday
+        task.done
           ? 'bg-[var(--color-emerald-quest)]/8 border-[var(--color-emerald-quest)]/30'
           : 'bg-white/[0.03] border-white/10'
       }`}
     >
-      <FloatingReward show={floating} text={`+${task.xpReward} баллов`} />
       <div className="flex items-center gap-2.5">
         <div className="text-xl flex-shrink-0 w-7 text-center">{task.emoji}</div>
         <div className="flex-1 min-w-0">
-          <div className={`text-sm truncate ${task.doneToday ? 'text-white/50 line-through' : 'text-white font-semibold'}`}>
+          <div className={`text-sm truncate ${task.done ? 'text-white/50 line-through' : 'text-white font-semibold'}`}>
             {task.title}
           </div>
-          <div className="flex items-center gap-1.5 mt-0.5">
-            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--color-gold)]/15 text-[var(--color-gold)] font-bold tabular-nums">
-              +{task.xpReward} баллов
-            </span>
-          </div>
+          {(task.time || task.reminderEnabled) && (
+            <div className="flex items-center gap-2 mt-0.5">
+              {task.time && (
+                <span className="flex items-center gap-1 text-[10px] text-white/50 tabular-nums">
+                  <Clock size={11} />
+                  {task.time}
+                </span>
+              )}
+              {task.reminderEnabled && (
+                <Bell size={11} className="text-[var(--color-gold)]" aria-label="Напоминание включено" />
+              )}
+            </div>
+          )}
         </div>
         <button
           onClick={onEdit}
@@ -51,11 +55,11 @@ export function SkillTaskRow({ task, onComplete, onCancel, onEdit }: SkillTaskRo
         >
           <Pencil size={14} />
         </button>
-        {task.doneToday ? (
+        {task.done ? (
           <button
-            onClick={onCancel}
+            onClick={onUncomplete}
             className="p-1.5 rounded-lg text-white/50 hover:text-white/80 hover:bg-white/10 transition flex-shrink-0"
-            aria-label="Отменить"
+            aria-label="Снять отметку"
           >
             <RotateCcw size={16} />
           </button>

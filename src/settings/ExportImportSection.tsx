@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { Download, Upload } from 'lucide-react'
 import { useAppState } from '../state/AppStateContext'
 import { useAuth } from '../auth/useAuth'
-import { loadTransactions } from '../storage/storage'
+import { loadTransactions, importTransactions } from '../storage/storage'
 import { SettingsCard } from './SettingsCard'
 import { Modal } from '../components/Modal'
 import type { AppState, Transaction } from '../types'
@@ -78,12 +78,23 @@ export function ExportImportSection() {
     }
   }
 
-  const applyImport = () => {
-    if (!confirmImport) return
+  const applyImport = async () => {
+    if (!confirmImport || !auth.user) return
     setImporting(true)
-    replaceState(confirmImport.state)
-    setConfirmImport(null)
-    setImporting(false)
+    setErr(null)
+    try {
+      replaceState(confirmImport.state)
+      // Восстанавливаем журнал транзакций (для «Статистики»). Идемпотентно по id:
+      // существующие операции в облаке не трогаются.
+      if (confirmImport.transactions.length > 0) {
+        await importTransactions(auth.user.id, confirmImport.transactions)
+      }
+      setConfirmImport(null)
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Не удалось восстановить транзакции')
+    } finally {
+      setImporting(false)
+    }
   }
 
   return (
@@ -135,7 +146,8 @@ export function ExportImportSection() {
               <div className="text-white/50">Баланс: <span className="text-white tabular-nums">{confirmImport.state.balance}</span></div>
             </div>
             <p className="text-xs text-white/40">
-              Старые транзакции в облаке останутся (для безопасности). State будет перезаписан.
+              Прогресс будет перезаписан. Операции из файла ({confirmImport.transactions.length}) добавятся
+              в журнал — дубликаты по id пропускаются, уже существующие в облаке остаются.
             </p>
             <div className="flex gap-2">
               <button

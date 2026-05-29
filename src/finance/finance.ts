@@ -1,6 +1,6 @@
 import type { AppState, Transaction, TxType, Goal, Task, Skill, SkillTask } from '../types'
 import { MAX_TRANSACTIONS_IN_STATE } from '../types'
-import { tickStreak } from './game'
+import { tickStreak, hasOtherActivityToday } from './game'
 
 const MAX_AMOUNT = 1_000_000_000
 const MAX_LABEL_LEN = 80
@@ -47,51 +47,39 @@ export interface ApplyResult {
 }
 
 /**
- * Выполнить задание: начислить деньги и XP, обновить streak.
+ * Выполнить задание: начислить баллы (опыт) и обновить streak. Денег не даёт.
  */
-export function applyEarn(state: AppState, taskId: string, now: Date): ApplyResult {
+export function applyEarn(state: AppState, taskId: string, now: Date): { state: AppState } {
   const task = state.tasks.find((t) => t.id === taskId)
   if (!task) throw new FinanceError('NOT_FOUND', 'Задание не найдено')
   if (task.doneToday) throw new FinanceError('ALREADY_DONE', 'Задание уже выполнено сегодня')
-  validateAmount(task.reward)
 
   const streakUpdate = tickStreak(state, now)
 
-  const tx: Transaction = {
-    id: newTxId(),
-    type: 'earn',
-    amount: task.reward,
-    label: `Награда: ${task.title}`,
-    timestamp: now.getTime(),
-  }
-
   const newState: AppState = {
     ...state,
-    balance: state.balance + task.reward,
-    totalEarned: state.totalEarned + task.reward,
     xp: state.xp + task.xpReward,
     totalCompleted: state.totalCompleted + 1,
     streak: streakUpdate.streak,
     lastActiveDate: streakUpdate.lastActiveDate,
     streakIncrementedToday: streakUpdate.incremented || state.streakIncrementedToday,
     tasks: state.tasks.map((t) => (t.id === taskId ? { ...t, doneToday: true } : t)),
-    transactions: appendTx(state, tx),
   }
 
-  return { state: newState, tx }
+  return { state: newState }
 }
 
 /**
- * Отменить выполнение задания: откатить деньги, XP, и (если это единственное за день) streak.
+ * Отменить выполнение задания: откатить баллы и (если это была единственная активность за день) streak.
  */
 export function applyCancel(state: AppState, taskId: string): { state: AppState } {
   const task = state.tasks.find((t) => t.id === taskId)
   if (!task) throw new FinanceError('NOT_FOUND', 'Задание не найдено')
   if (!task.doneToday) throw new FinanceError('NOT_DONE', 'Задание не было выполнено')
 
-  // Откат streak: только если это было единственное выполненное за сегодня
-  const otherDoneToday = state.tasks.some((t) => t.id !== taskId && t.doneToday)
-  const shouldRollbackStreak = state.streakIncrementedToday && !otherDoneToday
+  // Откат streak: только если за сегодня больше нет выполненной активности (квест/навык/дело дня)
+  const shouldRollbackStreak =
+    state.streakIncrementedToday && !hasOtherActivityToday(state, taskId)
 
   let streak = state.streak
   let lastActiveDate = state.lastActiveDate
@@ -105,8 +93,6 @@ export function applyCancel(state: AppState, taskId: string): { state: AppState 
 
   const newState: AppState = {
     ...state,
-    balance: state.balance - task.reward,
-    totalEarned: state.totalEarned - task.reward,
     xp: Math.max(0, state.xp - task.xpReward),
     streak,
     lastActiveDate,
@@ -442,12 +428,11 @@ export function applyEditGoal(
 export function applyEditTask(
   state: AppState,
   taskId: string,
-  patch: Partial<Pick<Task, 'title' | 'emoji' | 'reward' | 'xpReward'>>,
+  patch: Partial<Pick<Task, 'title' | 'emoji' | 'xpReward'>>,
 ): AppState {
   const task = state.tasks.find((t) => t.id === taskId)
   if (!task) throw new FinanceError('NOT_FOUND', 'Задание не найдено')
 
-  if (patch.reward !== undefined) validateAmount(patch.reward)
   if (patch.title !== undefined) validateLabel(patch.title)
 
   return {
@@ -464,7 +449,6 @@ export function applyAddTask(
   task: Omit<Task, 'id' | 'doneToday'>,
 ): AppState {
   validateLabel(task.title)
-  validateAmount(task.reward)
   return {
     ...state,
     tasks: [
@@ -509,30 +493,19 @@ export const TX_TYPES: readonly TxType[] = ['earn', 'spend', 'save', 'withdraw']
 // ============= Навыки =============
 
 /**
- * Выполнить задание навыка: деньги, общий XP и XP в навык.
+ * Выполнить задание навыка: баллы в общий опыт и в опыт навыка. Денег не даёт.
  */
-export function applyEarnSkillTask(state: AppState, taskId: string, now: Date): ApplyResult {
+export function applyEarnSkillTask(state: AppState, taskId: string, now: Date): { state: AppState } {
   const task = state.skillTasks.find((t) => t.id === taskId)
   if (!task) throw new FinanceError('NOT_FOUND', 'Задание не найдено')
   if (task.doneToday) throw new FinanceError('ALREADY_DONE', 'Задание уже выполнено сегодня')
   const skill = state.skills.find((s) => s.id === task.skillId)
   if (!skill) throw new FinanceError('NOT_FOUND', 'Навык не найден')
-  validateAmount(task.reward)
 
   const streakUpdate = tickStreak(state, now)
 
-  const tx: Transaction = {
-    id: newTxId(),
-    type: 'earn',
-    amount: task.reward,
-    label: `${skill.title}: ${task.title}`,
-    timestamp: now.getTime(),
-  }
-
   const newState: AppState = {
     ...state,
-    balance: state.balance + task.reward,
-    totalEarned: state.totalEarned + task.reward,
     xp: state.xp + task.xpReward,
     totalCompleted: state.totalCompleted + 1,
     streak: streakUpdate.streak,
@@ -542,24 +515,21 @@ export function applyEarnSkillTask(state: AppState, taskId: string, now: Date): 
     skills: state.skills.map((s) =>
       s.id === task.skillId ? { ...s, xp: s.xp + task.xpReward } : s,
     ),
-    transactions: appendTx(state, tx),
   }
 
-  return { state: newState, tx }
+  return { state: newState }
 }
 
 /**
- * Отмена задания навыка: откатить деньги, общий XP, XP навыка, streak (по правилам).
+ * Отмена задания навыка: откатить общий опыт, опыт навыка и streak (по правилам).
  */
 export function applyCancelSkillTask(state: AppState, taskId: string): { state: AppState } {
   const task = state.skillTasks.find((t) => t.id === taskId)
   if (!task) throw new FinanceError('NOT_FOUND', 'Задание не найдено')
   if (!task.doneToday) throw new FinanceError('NOT_DONE', 'Задание не было выполнено')
 
-  const otherTaskDone = state.tasks.some((t) => t.doneToday)
-  const otherSkillTaskDone = state.skillTasks.some((t) => t.id !== taskId && t.doneToday)
   const shouldRollbackStreak =
-    state.streakIncrementedToday && !otherTaskDone && !otherSkillTaskDone
+    state.streakIncrementedToday && !hasOtherActivityToday(state, taskId)
 
   let streak = state.streak
   let lastActiveDate = state.lastActiveDate
@@ -572,8 +542,6 @@ export function applyCancelSkillTask(state: AppState, taskId: string): { state: 
 
   const newState: AppState = {
     ...state,
-    balance: state.balance - task.reward,
-    totalEarned: state.totalEarned - task.reward,
     xp: Math.max(0, state.xp - task.xpReward),
     streak,
     lastActiveDate,
@@ -648,7 +616,6 @@ export function applyAddSkillTask(
     throw new FinanceError('NOT_FOUND', 'Навык не найден')
   }
   validateLabel(input.title)
-  validateAmount(input.reward)
   return {
     ...state,
     skillTasks: [
@@ -661,13 +628,12 @@ export function applyAddSkillTask(
 export function applyEditSkillTask(
   state: AppState,
   taskId: string,
-  patch: Partial<Pick<SkillTask, 'title' | 'emoji' | 'reward' | 'xpReward'>>,
+  patch: Partial<Pick<SkillTask, 'title' | 'emoji' | 'xpReward'>>,
 ): AppState {
   if (!state.skillTasks.some((t) => t.id === taskId)) {
     throw new FinanceError('NOT_FOUND', 'Задание не найдено')
   }
   if (patch.title !== undefined) validateLabel(patch.title)
-  if (patch.reward !== undefined) validateAmount(patch.reward)
   return {
     ...state,
     skillTasks: state.skillTasks.map((t) => (t.id === taskId ? { ...t, ...patch } : t)),

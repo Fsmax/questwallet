@@ -1,14 +1,13 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronDown, Plus, Pencil } from 'lucide-react'
-import type { Skill, SkillTask, Currency } from '../types'
+import type { Skill, SkillTask } from '../types'
 import { calcLevel } from '../finance/game'
 import { SkillTaskRow } from './SkillTaskRow'
 
 interface SkillCardProps {
   skill: Skill
   tasks: SkillTask[]
-  currency: Currency
   expanded: boolean
   onToggle: () => void
   onEdit: () => void
@@ -21,7 +20,6 @@ interface SkillCardProps {
 export function SkillCard({
   skill,
   tasks,
-  currency,
   expanded,
   onToggle,
   onEdit,
@@ -116,7 +114,6 @@ export function SkillCard({
                   <SkillTaskRow
                     key={t.id}
                     task={t}
-                    currency={currency}
                     onComplete={() => onCompleteTask(t.id)}
                     onCancel={() => onCancelTask(t.id)}
                     onEdit={() => onEditTask(t)}

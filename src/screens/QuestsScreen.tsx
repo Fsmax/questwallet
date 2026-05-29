@@ -27,7 +27,7 @@ export function QuestsScreen() {
 
   const handleDelete = () => {
     if (editing?.mode !== 'edit') return
-    if (confirm('Удалить квест? Деньги и опыт за прошлые выполнения останутся.')) {
+    if (confirm('Удалить квест? Баллы за прошлые выполнения останутся.')) {
       deleteTask(editing.task.id)
       setEditing(null)
     }
@@ -69,7 +69,6 @@ export function QuestsScreen() {
               <QuestCard
                 key={task.id}
                 task={task}
-                currency={state.currency}
                 onComplete={() => earn(task.id)}
                 onCancel={() => cancel(task.id)}
                 onEdit={() => setEditing({ mode: 'edit', task })}

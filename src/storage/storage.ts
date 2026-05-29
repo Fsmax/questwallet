@@ -2,6 +2,7 @@ import { supabase } from '../lib/supabase'
 import type { AppState, Transaction } from '../types'
 import { createInitialState } from '../lib/seed'
 import { ensureDefaults } from './ensureDefaults'
+import { buildTransactionRows } from './txRows'
 
 const LS_KEY_PREFIX = 'questwallet_state_'
 const LS_VERSION_KEY_PREFIX = 'questwallet_state_version_'
@@ -70,6 +71,27 @@ export async function loadState(userId: string): Promise<LoadResult> {
   const version = Number(inserted.state_version)
   writeCache(userId, seed, version)
   return { state: seed, version, source: 'seed' }
+}
+
+/**
+ * Прочитать текущее состояние из облака без побочных эффектов (без seed-вставки).
+ * Нужно при конфликте версий, чтобы показать пользователю «версию с другого устройства».
+ * Возвращает null, если строки ещё нет.
+ */
+export async function fetchState(
+  userId: string,
+): Promise<{ state: AppState; version: number } | null> {
+  const { data, error } = await supabase
+    .from('user_state')
+    .select('state, state_version')
+    .eq('user_id', userId)
+    .maybeSingle()
+  if (error) throw error
+  if (!data) return null
+  return {
+    state: ensureDefaults(data.state as AppState),
+    version: Number(data.state_version),
+  }
 }
 
 /**
@@ -200,12 +222,18 @@ export async function updateTransaction(
   id: string,
   patch: { amount: number; label: string; category: string | null },
 ): Promise<void> {
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('transactions')
     .update({ amount: patch.amount, label: patch.label, category: patch.category })
     .eq('id', id)
     .eq('user_id', userId)
+    .select('id')
   if (error) throw error
+  // 0 строк = строка не найдена ИЛИ RLS-политика на UPDATE отсутствует/не пускает.
+  // Раньше это проходило молча и журнал расходился со state — теперь падаем явно.
+  if (!data || data.length === 0) {
+    throw new Error(`Транзакция ${id} не обновлена в журнале (нет строки или нет прав)`)
+  }
 }
 
 /**
@@ -218,6 +246,30 @@ export async function deleteTransaction(userId: string, id: string): Promise<voi
     .eq('id', id)
     .eq('user_id', userId)
   if (error) throw error
+}
+
+/**
+ * Восстановить журнал транзакций из бэкапа. Вставка идемпотентна по id
+ * (ON CONFLICT DO NOTHING) — существующие в облаке операции не трогаются, что
+ * соответствует обещанию импорта «старые транзакции сохранятся». Маппинг и отсев
+ * битых строк — в чистой buildTransactionRows (покрыта тестами).
+ * Возвращает число строк, отправленных на вставку.
+ */
+export async function importTransactions(
+  userId: string,
+  txs: Transaction[],
+): Promise<number> {
+  const rows = buildTransactionRows(userId, txs)
+  if (rows.length === 0) return 0
+
+  const CHUNK = 500
+  for (let i = 0; i < rows.length; i += CHUNK) {
+    const { error } = await supabase
+      .from('transactions')
+      .upsert(rows.slice(i, i + CHUNK), { onConflict: 'id', ignoreDuplicates: true })
+    if (error) throw error
+  }
+  return rows.length
 }
 
 /**
@@ -297,6 +349,11 @@ function writeCache(userId: string, state: AppState, version: number): void {
   } catch {
     // localStorage может быть недоступен (private mode, переполнение) — игнорируем
   }
+}
+
+/** Обновить localStorage-кэш без записи в облако (например, после выбора серверной версии при конфликте). */
+export function cacheState(userId: string, state: AppState, version: number): void {
+  writeCache(userId, state, version)
 }
 
 export function clearCache(userId: string): void {

@@ -27,10 +27,10 @@ describe('aggregateByDay', () => {
     expect(result[result.length - 1].day).toBe('2026-05-28')
   })
 
-  it('суммирует earn и spend по дням', () => {
+  it('суммирует пополнения (deposit) и расходы по дням', () => {
     const txs = [
-      tx({ type: 'earn', amount: 200 }),
-      tx({ type: 'earn', amount: 300 }),
+      tx({ type: 'deposit', amount: 200 }),
+      tx({ type: 'deposit', amount: 300 }),
       tx({ type: 'spend', amount: 150 }),
     ]
     const result = aggregateByDay(txs, 7, TZ, 4, NOW)
@@ -40,7 +40,7 @@ describe('aggregateByDay', () => {
   })
 
   it('транзакции вне окна игнорируются', () => {
-    const old = tx({ type: 'earn', amount: 999, timestamp: new Date('2020-01-01T00:00:00Z').getTime() })
+    const old = tx({ type: 'deposit', amount: 999, timestamp: new Date('2020-01-01T00:00:00Z').getTime() })
     const result = aggregateByDay([old], 7, TZ, 4, NOW)
     const totalEarned = result.reduce((s, b) => s + b.earned, 0)
     expect(totalEarned).toBe(0)
@@ -58,8 +58,8 @@ describe('aggregateByDay', () => {
 describe('summarize', () => {
   it('считает суммы по типам', () => {
     const txs = [
-      tx({ type: 'earn', amount: 200 }),
-      tx({ type: 'earn', amount: 300 }),
+      tx({ type: 'deposit', amount: 200 }),
+      tx({ type: 'deposit', amount: 300 }),
       tx({ type: 'spend', amount: 100 }),
       tx({ type: 'save', amount: 400 }),
       tx({ type: 'withdraw', amount: 50 }),
@@ -70,10 +70,10 @@ describe('summarize', () => {
     expect(s.totalSaved).toBe(400)
   })
 
-  it('средний заработок за активный день', () => {
+  it('средние пополнения за активный день', () => {
     const txs = [
-      tx({ type: 'earn', amount: 200, timestamp: new Date('2026-05-27T10:00:00Z').getTime() }),
-      tx({ type: 'earn', amount: 400, timestamp: new Date('2026-05-28T10:00:00Z').getTime() }),
+      tx({ type: 'deposit', amount: 200, timestamp: new Date('2026-05-27T10:00:00Z').getTime() }),
+      tx({ type: 'deposit', amount: 400, timestamp: new Date('2026-05-28T10:00:00Z').getTime() }),
     ]
     const s = summarize(txs)
     expect(s.activeDays).toBe(2)

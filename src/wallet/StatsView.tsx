@@ -79,7 +79,7 @@ export function StatsView({ state, userId, currency }: StatsViewProps) {
       <div className="grid grid-cols-3 gap-2">
         <SummaryCard
           icon={<TrendingUp size={16} className="text-[var(--color-emerald-quest)]" />}
-          label="Заработано"
+          label="Пополнения"
           value={formatMoneyShort(summary.totalEarned, currency)}
           color="text-[var(--color-emerald-quest)]"
         />
@@ -98,7 +98,7 @@ export function StatsView({ state, userId, currency }: StatsViewProps) {
       </div>
 
       <div className="rounded-2xl p-4 bg-white/5 border border-white/10">
-        <div className="text-xs text-white/50">Средний заработок в активный день</div>
+        <div className="text-xs text-white/50">Средний доход в активный день</div>
         <div className="font-[family-name:var(--font-display)] text-xl font-bold text-white tabular-nums">
           {formatMoney(summary.avgEarnedPerActiveDay, currency)}
         </div>
@@ -110,7 +110,7 @@ export function StatsView({ state, userId, currency }: StatsViewProps) {
       {/* График по дням */}
       <div className="rounded-2xl p-4 bg-white/5 border border-white/10">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-bold text-white">Заработок и расход</h3>
+          <h3 className="text-sm font-bold text-white">Доходы и расходы</h3>
           <span className="text-xs text-white/40">{RANGE} дней</span>
         </div>
         <div className="flex items-end justify-between gap-1 h-32">
@@ -120,7 +120,7 @@ export function StatsView({ state, userId, currency }: StatsViewProps) {
                 <div
                   className="w-1/2 max-w-2.5 rounded-t bg-[var(--color-emerald-quest)] transition-all"
                   style={{ height: `${(b.earned / maxVal) * 100}%` }}
-                  title={`Заработок: ${formatMoney(b.earned, currency)}`}
+                  title={`Доход: ${formatMoney(b.earned, currency)}`}
                 />
                 <div
                   className="w-1/2 max-w-2.5 rounded-t bg-[var(--color-coral)] transition-all"
@@ -136,7 +136,7 @@ export function StatsView({ state, userId, currency }: StatsViewProps) {
         </div>
         <div className="flex items-center justify-center gap-4 mt-3 text-xs">
           <span className="flex items-center gap-1.5 text-white/50">
-            <span className="w-2.5 h-2.5 rounded bg-[var(--color-emerald-quest)]" /> заработок
+            <span className="w-2.5 h-2.5 rounded bg-[var(--color-emerald-quest)]" /> доход
           </span>
           <span className="flex items-center gap-1.5 text-white/50">
             <span className="w-2.5 h-2.5 rounded bg-[var(--color-coral)]" /> расход

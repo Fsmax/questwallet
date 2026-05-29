@@ -40,7 +40,7 @@ export function aggregateByDay(
     const day = getCurrentDay(new Date(tx.timestamp), timezone, resetHour)
     const b = buckets.get(day)
     if (!b) continue // вне окна
-    if (tx.type === 'earn') b.earned += tx.amount
+    if (tx.type === 'deposit') b.earned += tx.amount
     else if (tx.type === 'spend') b.spent += tx.amount
   }
 
@@ -54,7 +54,7 @@ export function summarize(transactions: Transaction[]): StatsSummary {
   const earnDays = new Set<string>()
 
   for (const tx of transactions) {
-    if (tx.type === 'earn') {
+    if (tx.type === 'deposit') {
       totalEarned += tx.amount
       earnDays.add(new Date(tx.timestamp).toISOString().slice(0, 10))
     } else if (tx.type === 'spend') {

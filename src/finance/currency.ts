@@ -6,8 +6,8 @@ import { FinanceError } from './finance'
  * `rate` — сколько сум за 1 доллар (например, 12500).
  *
  * Конвертируются текущие величины: баланс, всего заработано, цели, долги,
- * регулярные расходы, награды квестов и навыков. История транзакций НЕ трогается —
- * прошлые записи остаются в тех числах, в которых были сделаны.
+ * регулярные расходы. Квесты/навыки наград в деньгах не имеют (только баллы), их не трогаем.
+ * История транзакций НЕ трогается — прошлые записи остаются в тех числах, в которых были сделаны.
  */
 export function convertState(state: AppState, to: Currency, rate: number): AppState {
   if (state.currency === to) return state
@@ -30,7 +30,5 @@ export function convertState(state: AppState, to: Currency, rate: number): AppSt
     goals: state.goals.map((g) => ({ ...g, target: conv(g.target), saved: conv(g.saved) })),
     debts: state.debts.map((d) => ({ ...d, principal: conv(d.principal), paid: conv(d.paid) })),
     recurringExpenses: state.recurringExpenses.map((r) => ({ ...r, amount: conv(r.amount) })),
-    tasks: state.tasks.map((t) => ({ ...t, reward: conv(t.reward) })),
-    skillTasks: state.skillTasks.map((t) => ({ ...t, reward: conv(t.reward) })),
   }
 }

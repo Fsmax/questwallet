@@ -25,7 +25,6 @@ function makeTask(over: Partial<Task> = {}): Task {
     id: 't1',
     title: 'Зарядка',
     emoji: '💪',
-    reward: 200,
     xpReward: 10,
     doneToday: false,
     ...over,
@@ -73,6 +72,7 @@ function makeState(over: Partial<AppState> = {}): AppState {
     tasks: [],
     skills: [],
     skillTasks: [],
+    dayTasks: [],
     goals: [],
     transactions: [],
     expenseCategories: [],
@@ -83,21 +83,18 @@ function makeState(over: Partial<AppState> = {}): AppState {
 }
 
 describe('applyEarn', () => {
-  it('happy path: начисляет деньги, XP, streak, doneToday=true', () => {
-    const s = makeState({ tasks: [makeTask({ reward: 200, xpReward: 10 })] })
-    const { state, tx } = applyEarn(s, 't1', NOW)
+  it('happy path: начисляет баллы (XP), streak, doneToday=true; денег и транзакции нет', () => {
+    const s = makeState({ tasks: [makeTask({ xpReward: 10 })] })
+    const { state } = applyEarn(s, 't1', NOW)
 
-    expect(state.balance).toBe(200)
-    expect(state.totalEarned).toBe(200)
+    expect(state.balance).toBe(0)
+    expect(state.totalEarned).toBe(0)
     expect(state.xp).toBe(10)
+    expect(state.totalCompleted).toBe(1)
     expect(state.streak).toBe(1)
     expect(state.streakIncrementedToday).toBe(true)
     expect(state.tasks[0].doneToday).toBe(true)
-    expect(state.transactions).toHaveLength(1)
-    expect(state.transactions[0].type).toBe('earn')
-    expect(state.transactions[0].amount).toBe(200)
-    expect(tx.id).toBeTruthy()
-    expect(tx.id).toBe(state.transactions[0].id)
+    expect(state.transactions).toHaveLength(0)
   })
 
   it('двойное выполнение → ошибка', () => {
@@ -121,12 +118,10 @@ describe('applyEarn', () => {
 })
 
 describe('applyCancel', () => {
-  it('откат денег, XP, doneToday=false', () => {
-    const s1 = makeState({ tasks: [makeTask({ reward: 200, xpReward: 10 })] })
+  it('откат баллов (XP), doneToday=false', () => {
+    const s1 = makeState({ tasks: [makeTask({ xpReward: 10 })] })
     const { state: s2 } = applyEarn(s1, 't1', NOW)
     const { state: s3 } = applyCancel(s2, 't1')
-    expect(s3.balance).toBe(0)
-    expect(s3.totalEarned).toBe(0)
     expect(s3.xp).toBe(0)
     expect(s3.tasks[0].doneToday).toBe(false)
   })
@@ -301,21 +296,21 @@ describe('applyEditGoal', () => {
 })
 
 describe('applyEditTask', () => {
-  it('меняем reward — баланс не пересчитывается', () => {
+  it('меняем баллы (xpReward) — баланс не трогаем', () => {
     const s = makeState({
       balance: 200,
-      tasks: [makeTask({ reward: 200, doneToday: true })],
+      tasks: [makeTask({ xpReward: 10, doneToday: true })],
     })
-    const s2 = applyEditTask(s, 't1', { reward: 500 })
+    const s2 = applyEditTask(s, 't1', { xpReward: 50 })
     expect(s2.balance).toBe(200)
-    expect(s2.tasks[0].reward).toBe(500)
+    expect(s2.tasks[0].xpReward).toBe(50)
   })
 })
 
 describe('applyAddTask / applyAddGoal', () => {
   it('добавление задания', () => {
     const s = makeState()
-    const s2 = applyAddTask(s, { title: 'Новое', emoji: '⭐', reward: 100, xpReward: 5 })
+    const s2 = applyAddTask(s, { title: 'Новое', emoji: '⭐', xpReward: 5 })
     expect(s2.tasks).toHaveLength(1)
     expect(s2.tasks[0].id).toBeTruthy()
     expect(s2.tasks[0].doneToday).toBe(false)
@@ -333,13 +328,10 @@ describe('applyAddTask / applyAddGoal', () => {
     expect(s2.goals[1].saved).toBe(0)
   })
 
-  it('добавление с невалидными данными → ошибка', () => {
+  it('добавление с пустым названием → ошибка', () => {
     const s = makeState()
     expect(() =>
-      applyAddTask(s, { title: '', emoji: '⭐', reward: 100, xpReward: 5 }),
-    ).toThrow(FinanceError)
-    expect(() =>
-      applyAddTask(s, { title: 'OK', emoji: '⭐', reward: -10, xpReward: 5 }),
+      applyAddTask(s, { title: '', emoji: '⭐', xpReward: 5 }),
     ).toThrow(FinanceError)
   })
 })

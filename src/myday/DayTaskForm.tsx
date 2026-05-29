@@ -1,26 +1,28 @@
 import { useState } from 'react'
-import { Trash2 } from 'lucide-react'
-import type { Task } from '../types'
+import { Trash2, Bell } from 'lucide-react'
+import type { DayTask } from '../types'
+import { Toggle } from '../settings/Toggle'
 
-const EMOJI_QUICK = ['💪', '📖', '🧘', '💧', '📵', '🌱', '🛌', '📝', '🏃', '🎨', '🎓', '💼', '🍎', '☀️', '⭐']
+const EMOJI_QUICK = ['☀️', '🏃', '🍳', '💧', '📖', '💼', '🧹', '🛒', '📞', '🧘', '🌙', '📝', '💊', '🚿', '⏰']
 
-export interface QuestFormValues {
+export interface DayTaskFormValues {
   title: string
   emoji: string
-  xpReward: number
+  time: string | null
+  reminderEnabled: boolean
 }
 
-interface QuestFormProps {
-  initial?: Task
-  onSubmit: (values: QuestFormValues) => void
+interface DayTaskFormProps {
+  initial?: DayTask
+  onSubmit: (values: DayTaskFormValues) => void
   onDelete?: () => void
-  submitLabel?: string
 }
 
-export function QuestForm({ initial, onSubmit, onDelete, submitLabel }: QuestFormProps) {
+export function DayTaskForm({ initial, onSubmit, onDelete }: DayTaskFormProps) {
   const [title, setTitle] = useState(initial?.title ?? '')
-  const [emoji, setEmoji] = useState(initial?.emoji ?? '⭐')
-  const [xpReward, setXpReward] = useState<string>(initial?.xpReward.toString() ?? '10')
+  const [emoji, setEmoji] = useState(initial?.emoji ?? '📌')
+  const [time, setTime] = useState<string>(initial?.time ?? '')
+  const [reminderEnabled, setReminderEnabled] = useState(initial?.reminderEnabled ?? false)
   const [err, setErr] = useState<string | null>(null)
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -28,14 +30,15 @@ export function QuestForm({ initial, onSubmit, onDelete, submitLabel }: QuestFor
     setErr(null)
     const trimmedTitle = title.trim()
     const trimmedEmoji = emoji.trim()
-    const xpNum = Number(xpReward)
 
     if (!trimmedTitle) return setErr('Введи название')
     if (trimmedTitle.length > 80) return setErr('Название слишком длинное')
     if (!trimmedEmoji) return setErr('Выбери эмодзи')
-    if (!Number.isFinite(xpNum) || xpNum <= 0 || xpNum > 1000) return setErr('Баллы от 1 до 1000')
+    // Напоминание без времени смысла не имеет
+    const cleanTime = time.trim() || null
+    if (reminderEnabled && !cleanTime) return setErr('Для напоминания укажи время')
 
-    onSubmit({ title: trimmedTitle, emoji: trimmedEmoji, xpReward: xpNum })
+    onSubmit({ title: trimmedTitle, emoji: trimmedEmoji, time: cleanTime, reminderEnabled })
   }
 
   return (
@@ -49,7 +52,7 @@ export function QuestForm({ initial, onSubmit, onDelete, submitLabel }: QuestFor
           maxLength={80}
           autoFocus
           className="w-full bg-black/30 border border-white/10 rounded-xl px-3 py-3 text-white placeholder:text-white/30 focus:border-[var(--color-gold)]/50 focus:outline-none transition"
-          placeholder="Утренняя зарядка"
+          placeholder="Позвонить маме"
         />
       </label>
 
@@ -81,16 +84,37 @@ export function QuestForm({ initial, onSubmit, onDelete, submitLabel }: QuestFor
       </div>
 
       <label className="block">
-        <span className="text-sm text-white/70 font-semibold mb-1.5 block">Баллы за выполнение</span>
-        <input
-          type="number"
-          value={xpReward}
-          onChange={(e) => setXpReward(e.target.value)}
-          inputMode="numeric"
-          min={1}
-          className="w-full bg-black/30 border border-white/10 rounded-xl px-3 py-3 text-white tabular-nums focus:border-[var(--color-gold)]/50 focus:outline-none transition"
-        />
+        <span className="text-sm text-white/70 font-semibold mb-1.5 block">Время (необязательно)</span>
+        <div className="flex items-center gap-2">
+          <input
+            type="time"
+            value={time}
+            onChange={(e) => setTime(e.target.value)}
+            className="flex-1 bg-black/30 border border-white/10 rounded-xl px-3 py-3 text-white tabular-nums focus:border-[var(--color-gold)]/50 focus:outline-none transition [color-scheme:dark]"
+          />
+          {time && (
+            <button
+              type="button"
+              onClick={() => setTime('')}
+              className="px-3 py-3 text-sm text-white/50 hover:text-white/80 rounded-xl hover:bg-white/5 transition"
+            >
+              Сброс
+            </button>
+          )}
+        </div>
       </label>
+
+      <div className="flex items-center justify-between bg-black/20 rounded-xl px-3 py-3">
+        <span className="flex items-center gap-2 text-sm text-white/80 font-semibold">
+          <Bell size={16} className="text-[var(--color-gold)]" />
+          Напоминание
+        </span>
+        <Toggle
+          on={reminderEnabled}
+          onToggle={() => setReminderEnabled((v) => !v)}
+          label="Напоминание"
+        />
+      </div>
 
       {err && (
         <div className="text-sm text-[var(--color-coral)] bg-[var(--color-coral)]/10 border border-[var(--color-coral)]/30 rounded-lg px-3 py-2">
@@ -102,7 +126,7 @@ export function QuestForm({ initial, onSubmit, onDelete, submitLabel }: QuestFor
         type="submit"
         className="w-full py-3 bg-[var(--color-gold)] text-[var(--color-bg-deep)] font-bold rounded-xl hover:brightness-110 active:scale-[0.98] transition"
       >
-        {submitLabel ?? (initial ? 'Сохранить' : 'Создать квест')}
+        {initial ? 'Сохранить' : 'Добавить дело'}
       </button>
 
       {onDelete && (
@@ -112,7 +136,7 @@ export function QuestForm({ initial, onSubmit, onDelete, submitLabel }: QuestFor
           className="w-full flex items-center justify-center gap-2 py-3 text-[var(--color-coral)] text-sm font-semibold hover:bg-[var(--color-coral)]/10 rounded-xl transition"
         >
           <Trash2 size={16} />
-          Удалить квест
+          Удалить дело
         </button>
       )}
     </form>

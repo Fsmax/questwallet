@@ -95,5 +95,11 @@ export function ensureDefaults(state: AppState): AppState {
     changed = true
   }
 
+  // Дела дня (схема v3): старым пользователям подкладываем пустой список.
+  if (!Array.isArray(next.dayTasks)) {
+    next = { ...next, dayTasks: [] }
+    changed = true
+  }
+
   return changed ? next : state
 }

@@ -1,4 +1,4 @@
-import type { AppState, Task, Goal, Skill, SkillTask, ExpenseCategory } from '../types'
+import type { AppState, Task, Goal, Skill, SkillTask, ExpenseCategory, DayTask } from '../types'
 import { CURRENT_SCHEMA_VERSION } from '../types'
 import { detectTimezone, getCurrentDay } from './dates'
 
@@ -23,14 +23,14 @@ export function seedCategories(): ExpenseCategory[] {
 }
 
 export const SEED_TASKS: Omit<Task, 'id' | 'doneToday'>[] = [
-  { title: 'Утренняя зарядка', emoji: '💪', reward: 200, xpReward: 10 },
-  { title: 'Чтение 30 минут', emoji: '📖', reward: 250, xpReward: 15 },
-  { title: 'Медитация', emoji: '🧘', reward: 200, xpReward: 10 },
-  { title: '2 литра воды', emoji: '💧', reward: 150, xpReward: 5 },
-  { title: 'Без соцсетей до обеда', emoji: '📵', reward: 300, xpReward: 15 },
-  { title: 'Выучить что-то новое', emoji: '🌱', reward: 300, xpReward: 20 },
-  { title: 'Лечь спать вовремя', emoji: '🛌', reward: 200, xpReward: 10 },
-  { title: 'Спланировать день', emoji: '📝', reward: 150, xpReward: 5 },
+  { title: 'Утренняя зарядка', emoji: '💪', xpReward: 10 },
+  { title: 'Чтение 30 минут', emoji: '📖', xpReward: 15 },
+  { title: 'Медитация', emoji: '🧘', xpReward: 10 },
+  { title: '2 литра воды', emoji: '💧', xpReward: 5 },
+  { title: 'Без соцсетей до обеда', emoji: '📵', xpReward: 15 },
+  { title: 'Выучить что-то новое', emoji: '🌱', xpReward: 20 },
+  { title: 'Лечь спать вовремя', emoji: '🛌', xpReward: 10 },
+  { title: 'Спланировать день', emoji: '📝', xpReward: 5 },
 ]
 
 export const SEED_GOALS: Omit<Goal, 'id' | 'saved' | 'createdAt' | 'completedAt' | 'order'>[] = [
@@ -41,7 +41,7 @@ export const SEED_GOALS: Omit<Goal, 'id' | 'saved' | 'createdAt' | 'completedAt'
 export interface SeedSkill {
   title: string
   emoji: string
-  tasks: { title: string; emoji: string; reward: number; xpReward: number }[]
+  tasks: { title: string; emoji: string; xpReward: number }[]
 }
 
 export const SEED_SKILLS: SeedSkill[] = [
@@ -49,29 +49,36 @@ export const SEED_SKILLS: SeedSkill[] = [
     title: 'Программирование',
     emoji: '💻',
     tasks: [
-      { title: 'Решить задачу', emoji: '🧩', reward: 500, xpReward: 25 },
-      { title: 'Изучить новую тему', emoji: '📚', reward: 400, xpReward: 20 },
-      { title: 'Поработать над пет-проектом', emoji: '🛠️', reward: 600, xpReward: 30 },
+      { title: 'Решить задачу', emoji: '🧩', xpReward: 25 },
+      { title: 'Изучить новую тему', emoji: '📚', xpReward: 20 },
+      { title: 'Поработать над пет-проектом', emoji: '🛠️', xpReward: 30 },
     ],
   },
   {
     title: 'Английский',
     emoji: '🇬🇧',
     tasks: [
-      { title: 'Урок Duolingo', emoji: '🦉', reward: 200, xpReward: 15 },
-      { title: '15 новых слов', emoji: '🔤', reward: 300, xpReward: 20 },
-      { title: 'Посмотреть видео', emoji: '🎬', reward: 250, xpReward: 15 },
+      { title: 'Урок Duolingo', emoji: '🦉', xpReward: 15 },
+      { title: '15 новых слов', emoji: '🔤', xpReward: 20 },
+      { title: 'Посмотреть видео', emoji: '🎬', xpReward: 15 },
     ],
   },
   {
     title: 'Спорт',
     emoji: '🏋️',
     tasks: [
-      { title: 'Тренировка 30 минут', emoji: '💪', reward: 400, xpReward: 25 },
-      { title: '10 000 шагов', emoji: '👟', reward: 300, xpReward: 15 },
-      { title: 'Растяжка', emoji: '🧘', reward: 200, xpReward: 10 },
+      { title: 'Тренировка 30 минут', emoji: '💪', xpReward: 25 },
+      { title: '10 000 шагов', emoji: '👟', xpReward: 15 },
+      { title: 'Растяжка', emoji: '🧘', xpReward: 10 },
     ],
   },
+]
+
+/** Стартовые дела дня (тайм-тудо) для первого запуска. */
+export const SEED_DAYTASKS: { title: string; emoji: string; time: string | null; reminderEnabled: boolean }[] = [
+  { title: 'Подъём и стакан воды', emoji: '☀️', time: '07:00', reminderEnabled: true },
+  { title: 'Спорт / зарядка', emoji: '🏃', time: '08:00', reminderEnabled: true },
+  { title: 'Подвести итоги дня', emoji: '📝', time: '22:00', reminderEnabled: false },
 ]
 
 export function createInitialState(now: Date = new Date()): AppState {
@@ -112,12 +119,20 @@ export function createInitialState(now: Date = new Date()): AppState {
         skillId,
         title: t.title,
         emoji: t.emoji,
-        reward: t.reward,
         xpReward: t.xpReward,
         doneToday: false,
       })
     })
   })
+
+  const dayTasks: DayTask[] = SEED_DAYTASKS.map((d, idx) => ({
+    ...d,
+    id: crypto.randomUUID(),
+    done: false,
+    lastRemindedDate: '',
+    order: idx,
+    createdAt: now.getTime(),
+  }))
 
   return {
     version: 1,
@@ -145,6 +160,7 @@ export function createInitialState(now: Date = new Date()): AppState {
     tasks,
     skills,
     skillTasks,
+    dayTasks,
     goals,
     transactions: [],
     expenseCategories: seedCategories(),

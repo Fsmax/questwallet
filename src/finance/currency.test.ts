@@ -30,6 +30,7 @@ function makeState(over: Partial<AppState> = {}): AppState {
     tasks: [],
     skills: [],
     skillTasks: [],
+    dayTasks: [],
     goals: [],
     transactions: [],
     expenseCategories: [],
@@ -46,7 +47,7 @@ describe('convertState', () => {
       balance: 5_000_000,
       totalEarned: 1_250_000,
       goals: [{ id: 'g', title: 'Кв', emoji: '🏠', target: 500_000_000, saved: 12_500, order: 0, createdAt: 0, completedAt: null }],
-      tasks: [{ id: 't', title: 'X', emoji: '💪', reward: 2500, xpReward: 10, doneToday: false }],
+      tasks: [{ id: 't', title: 'X', emoji: '💪', xpReward: 10, doneToday: false }],
     })
     const r = convertState(s, 'USD', 12500)
     expect(r.currency).toBe('USD')
@@ -54,8 +55,7 @@ describe('convertState', () => {
     expect(r.totalEarned).toBe(100)
     expect(r.goals[0].target).toBe(40000)
     expect(r.goals[0].saved).toBe(1)
-    expect(r.tasks[0].reward).toBe(0.2)
-    expect(r.tasks[0].xpReward).toBe(10) // XP не трогаем
+    expect(r.tasks[0].xpReward).toBe(10) // баллы не трогаем
   })
 
   it('USD → сум умножает по курсу и округляет до целого', () => {

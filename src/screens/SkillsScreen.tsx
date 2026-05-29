@@ -113,7 +113,6 @@ export function SkillsScreen() {
                 key={skill.id}
                 skill={skill}
                 tasks={state.skillTasks.filter((t) => t.skillId === skill.id)}
-                currency={state.currency}
                 expanded={expanded.has(skill.id)}
                 onToggle={() => toggleExpand(skill.id)}
                 onEdit={() => setSkillEditing({ mode: 'edit', skill })}

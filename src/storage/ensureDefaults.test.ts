@@ -29,6 +29,7 @@ function rawState(over: Record<string, unknown> = {}): AppState {
     tasks: [],
     skills: [],
     skillTasks: [],
+    dayTasks: [],
     goals: [],
     transactions: [],
     expenseCategories: [{ id: 'c1', title: 'Еда', emoji: '🍔', order: 0 }],
@@ -77,5 +78,12 @@ describe('ensureDefaults', () => {
     const s = rawState({ lastNotifiedDate: undefined })
     const r = ensureDefaults(s)
     expect(r.lastNotifiedDate).toEqual({ morning: '', evening: '' })
+  })
+
+  it('добавляет dayTasks=[] если отсутствует', () => {
+    const s = rawState({ dayTasks: undefined })
+    const r = ensureDefaults(s)
+    expect(Array.isArray(r.dayTasks)).toBe(true)
+    expect(r.dayTasks).toHaveLength(0)
   })
 })

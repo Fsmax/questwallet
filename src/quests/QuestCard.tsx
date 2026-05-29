@@ -1,20 +1,18 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Check, RotateCcw, Pencil } from 'lucide-react'
-import type { Task, Currency } from '../types'
-import { formatMoney } from '../lib/format'
+import type { Task } from '../types'
 import { feedbackComplete } from '../lib/feedback'
 import { FloatingReward } from './FloatingReward'
 
 interface QuestCardProps {
   task: Task
-  currency: Currency
   onComplete: () => void
   onCancel: () => void
   onEdit: () => void
 }
 
-export function QuestCard({ task, currency, onComplete, onCancel, onEdit }: QuestCardProps) {
+export function QuestCard({ task, onComplete, onCancel, onEdit }: QuestCardProps) {
   const [floating, setFloating] = useState(false)
 
   const handleComplete = () => {
@@ -36,7 +34,7 @@ export function QuestCard({ task, currency, onComplete, onCancel, onEdit }: Ques
           : 'bg-white/5 border-white/10'
       }`}
     >
-      <FloatingReward show={floating} text={`+${formatMoney(task.reward, currency)}`} />
+      <FloatingReward show={floating} text={`+${task.xpReward} баллов`} />
 
       <div className="flex items-center gap-3">
         <div
@@ -57,9 +55,8 @@ export function QuestCard({ task, currency, onComplete, onCancel, onEdit }: Ques
           </div>
           <div className="flex items-center gap-2 mt-0.5">
             <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--color-gold)]/15 text-[var(--color-gold)] font-bold tabular-nums">
-              +{formatMoney(task.reward, currency)}
+              +{task.xpReward} баллов
             </span>
-            <span className="text-xs text-white/40">+{task.xpReward} XP</span>
           </div>
         </div>
 

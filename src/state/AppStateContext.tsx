@@ -8,10 +8,12 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import type { AppState, Currency, DebtDirection, RecurringKind, RemindersConfig, Transaction } from '../types'
+import type { AppState, Currency, DayTask, DebtDirection, RecurringKind, RemindersConfig, Transaction } from '../types'
 import { useAuth } from '../auth/useAuth'
 import {
   loadState,
+  fetchState,
+  cacheState,
   createDebouncedSaver,
   appendTransaction,
   updateTransaction as updateTxInCloud,
@@ -65,6 +67,14 @@ import {
   applyEditDebt,
   applyDeleteDebt,
 } from '../finance/debts'
+import {
+  applyAddDayTask,
+  applyEditDayTask,
+  applyDeleteDayTask,
+  applyCompleteDayTask,
+  applyUncompleteDayTask,
+  applyMarkDayTaskReminded,
+} from '../finance/dayTasks'
 import { convertState } from '../finance/currency'
 
 export type AppStatus = 'loading' | 'ready' | 'error'
@@ -77,6 +87,9 @@ export interface AppStateApi {
   clearNotice: () => void
   achievementUnlocked: string | null
   clearAchievementToast: () => void
+  // Конфликт версий между устройствами: ждёт явного выбора пользователя.
+  conflict: { serverState: AppState } | null
+  resolveConflict: (keep: 'local' | 'server') => void
   // Финансовые операции (синхронные, обновляют state и шлют в облако с debounce)
   earn: (taskId: string) => void
   cancel: (taskId: string) => void
@@ -87,8 +100,8 @@ export interface AppStateApi {
   editTransaction: (tx: Transaction, patch: { amount?: number; label?: string; category?: string | null }) => void
   deleteTransaction: (tx: Transaction) => void
   // Жизненный цикл
-  addTask: (input: { title: string; emoji: string; reward: number; xpReward: number }) => void
-  editTask: (taskId: string, patch: { title?: string; emoji?: string; reward?: number; xpReward?: number }) => void
+  addTask: (input: { title: string; emoji: string; xpReward: number }) => void
+  editTask: (taskId: string, patch: { title?: string; emoji?: string; xpReward?: number }) => void
   deleteTask: (taskId: string) => void
   addGoal: (input: { title: string; emoji: string; target: number }) => void
   editGoal: (goalId: string, patch: { title?: string; emoji?: string; target?: number; order?: number }) => void
@@ -105,8 +118,8 @@ export interface AppStateApi {
   addSkill: (input: { title: string; emoji: string }) => void
   editSkill: (skillId: string, patch: { title?: string; emoji?: string; order?: number }) => void
   deleteSkill: (skillId: string) => void
-  addSkillTask: (skillId: string, input: { title: string; emoji: string; reward: number; xpReward: number }) => void
-  editSkillTask: (taskId: string, patch: { title?: string; emoji?: string; reward?: number; xpReward?: number }) => void
+  addSkillTask: (skillId: string, input: { title: string; emoji: string; xpReward: number }) => void
+  editSkillTask: (taskId: string, patch: { title?: string; emoji?: string; xpReward?: number }) => void
   deleteSkillTask: (taskId: string) => void
   loadSeedSkills: () => void
   // Категории расходов
@@ -123,6 +136,13 @@ export interface AppStateApi {
   repayDebt: (debtId: string, amount: number) => void
   editDebt: (debtId: string, patch: { person?: string; emoji?: string; note?: string; dueDate?: string | null; principal?: number; order?: number }) => void
   deleteDebt: (debtId: string) => void
+  // Дела дня (тайм-тудо со временем и напоминаниями; баллов не дают)
+  addDayTask: (input: { title: string; emoji: string; time: string | null; reminderEnabled: boolean }) => void
+  editDayTask: (id: string, patch: Partial<Pick<DayTask, 'title' | 'emoji' | 'time' | 'reminderEnabled' | 'order'>>) => void
+  deleteDayTask: (id: string) => void
+  completeDayTask: (id: string) => void
+  uncompleteDayTask: (id: string) => void
+  markDayTasksReminded: (ids: string[], day: string) => void
   // Опасные операции
   replaceState: (incoming: AppState) => void
   factoryReset: () => Promise<void>
@@ -148,6 +168,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [notice, setNotice] = useState<string | null>(null)
   // Очередь: показываем разблокированные достижения по очереди, а не теряем все кроме первого.
   const [achievementQueue, setAchievementQueue] = useState<string[]>([])
+  // Конфликт версий: храним серверную версию и ждём решения пользователя (не затираем молча).
+  const [conflict, setConflict] = useState<{ serverState: AppState; serverVersion: number } | null>(null)
+  const conflictRef = useRef(false)
 
   // «Свежие» значения для колбэков сейвера/таймеров, которые живут вне рендера.
   const stateRef = useRef<AppState | null>(null)
@@ -169,7 +192,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       setState(null)
       setVersion(0)
       setStatus('loading')
+      setConflict(null)
       /* eslint-enable react-hooks/set-state-in-effect */
+      conflictRef.current = false
       saverRef.current?.cancel()
       saverRef.current = null
       return
@@ -184,16 +209,33 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         setVersion(newVersion)
       },
       (serverVersion) => {
-        // Конфликт версий: сохраняем ТЕКУЩЕЕ локальное состояние поверх свежей версии
-        // сервера (last-writer-wins по этому устройству), чтобы не потерять только что
-        // сделанные правки. Раньше затягивалось серверное и локальное терялось.
+        // Конфликт версий: были изменения с другого устройства. Не затираем их молча —
+        // тянем серверную версию и спрашиваем пользователя, какую оставить.
         versionRef.current = serverVersion
         setVersion(serverVersion)
-        const local = stateRef.current
-        if (local) {
-          setNotice('Были изменения с другого устройства — сохранил твою версию поверх.')
-          saverRef.current?.save(local)
-        }
+        conflictRef.current = true
+        saverRef.current?.cancel()
+        fetchState(userId)
+          .then((server) => {
+            if (!server) {
+              // Серверной строки нет (крайне редко) — безопасно сохранить локальное.
+              conflictRef.current = false
+              const local = stateRef.current
+              if (local) saverRef.current?.save(local)
+              return
+            }
+            setConflict({ serverState: server.state, serverVersion: server.version })
+          })
+          .catch(() => {
+            // Не удалось получить серверную версию (сеть) — fallback на прежнее
+            // поведение: пишем локальное поверх, чтобы не потерять свежие правки.
+            conflictRef.current = false
+            const local = stateRef.current
+            if (local) {
+              setNotice('Были изменения с другого устройства — сохранил твою версию поверх.')
+              saverRef.current?.save(local)
+            }
+          })
       },
       (err) => {
         console.error('Save failed', err)
@@ -243,7 +285,11 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       setAchievementQueue((q) => [...q, ...fresh])
     }
     setState(finalState)
-    saverRef.current?.save(finalState)
+    // Пока конфликт не разрешён, не пушим в облако — иначе зациклимся на повторных
+    // конфликтах. Изменения накопятся локально и уйдут после выбора «оставить эту версию».
+    if (!conflictRef.current) {
+      saverRef.current?.save(finalState)
+    }
   }, [])
 
   // Авто-сброс дня каждую минуту: если резет-граница прошла, обнуляем галочки задач без перезагрузки.
@@ -292,6 +338,33 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  // Разрешение конфликта версий: пользователь выбирает, какую версию оставить.
+  const resolveConflict = useCallback(
+    (keep: 'local' | 'server') => {
+      if (!conflict) return
+      conflictRef.current = false
+      versionRef.current = conflict.serverVersion
+      setVersion(conflict.serverVersion)
+
+      if (keep === 'server') {
+        // Принимаем версию с другого устройства, локальные правки отбрасываем.
+        setState(conflict.serverState)
+        stateRef.current = conflict.serverState
+        if (userId) cacheState(userId, conflict.serverState, conflict.serverVersion)
+        setNotice('Загружена версия с другого устройства.')
+      } else {
+        // Оставляем свою версию: пишем её поверх серверной (под актуальной версией).
+        const local = stateRef.current
+        if (local) {
+          saverRef.current?.save(local)
+          setNotice('Сохранена твоя версия поверх изменений с другого устройства.')
+        }
+      }
+      setConflict(null)
+    },
+    [conflict, userId],
+  )
+
   const api = useMemo<AppStateApi>(() => {
     const requireState = () => {
       if (!stateRef.current) throw new Error('State not loaded')
@@ -305,11 +378,13 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       clearNotice: () => setNotice(null),
       achievementUnlocked: achievementQueue[0] ?? null,
       clearAchievementToast: () => setAchievementQueue((q) => q.slice(1)),
+      conflict: conflict ? { serverState: conflict.serverState } : null,
+      resolveConflict,
 
       earn: (taskId) => {
         safe(() => {
           const r = applyEarn(requireState(), taskId, new Date())
-          commitWithTx(r.state, r.tx)
+          commit(r.state)
         })
       },
       cancel: (taskId) => {
@@ -388,7 +463,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       earnSkillTask: (taskId) => {
         safe(() => {
           const r = applyEarnSkillTask(requireState(), taskId, new Date())
-          commitWithTx(r.state, r.tx)
+          commit(r.state)
         })
       },
       cancelSkillTask: (taskId) => {
@@ -475,6 +550,29 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         safe(() => commit(applyDeleteDebt(requireState(), debtId)))
       },
 
+      addDayTask: (input) => {
+        safe(() => commit(applyAddDayTask(requireState(), input, new Date())))
+      },
+      editDayTask: (id, patch) => {
+        safe(() => commit(applyEditDayTask(requireState(), id, patch)))
+      },
+      deleteDayTask: (id) => {
+        safe(() => commit(applyDeleteDayTask(requireState(), id)))
+      },
+      completeDayTask: (id) => {
+        safe(() => commit(applyCompleteDayTask(requireState(), id, new Date())))
+      },
+      uncompleteDayTask: (id) => {
+        safe(() => commit(applyUncompleteDayTask(requireState(), id)))
+      },
+      markDayTasksReminded: (ids, day) => {
+        safe(() => {
+          let next = requireState()
+          for (const id of ids) next = applyMarkDayTaskReminded(next, id, day)
+          commit(next)
+        })
+      },
+
       setCurrency: (currency) => {
         safe(() => commit({ ...requireState(), currency }))
       },
@@ -514,7 +612,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         }
       },
     }
-  }, [state, status, error, notice, achievementQueue, commit, commitWithTx, safe, userId])
+  }, [state, status, error, notice, achievementQueue, conflict, resolveConflict, commit, commitWithTx, safe, userId])
 
   return <Ctx.Provider value={api}>{children}</Ctx.Provider>
 }

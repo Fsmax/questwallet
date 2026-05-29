@@ -18,6 +18,8 @@ export function getMetricValue(state: AppState, metric: AchievementMetric): numb
       return calcLevel(state.xp).level
     case 'earned':
       return state.totalEarned
+    case 'xp':
+      return state.xp
     case 'goals':
       return state.goals.filter((g) => g.completedAt !== null).length
     case 'skillLevel':

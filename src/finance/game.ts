@@ -68,5 +68,20 @@ export function dailyResetIfNeeded(state: AppState, now: Date): AppState {
     streakIncrementedToday: false,
     tasks: state.tasks.map((t) => ({ ...t, doneToday: false })),
     skillTasks: state.skillTasks.map((t) => ({ ...t, doneToday: false })),
+    // lastRemindedDate не чистим: вчерашняя дата уже !== today, напоминания сработают.
+    dayTasks: state.dayTasks.map((t) => ({ ...t, done: false })),
   }
+}
+
+/**
+ * Есть ли сегодня хоть одна выполненная активность среди квестов, заданий навыков
+ * и дел дня (необязательно исключив одну по id). Нужно для корректного отката серии:
+ * отмена одного выполнения не должна ронять серию, которую держит другое.
+ */
+export function hasOtherActivityToday(state: AppState, excludeId?: string): boolean {
+  return (
+    state.tasks.some((t) => t.id !== excludeId && t.doneToday) ||
+    state.skillTasks.some((t) => t.id !== excludeId && t.doneToday) ||
+    state.dayTasks.some((t) => t.id !== excludeId && t.done)
+  )
 }

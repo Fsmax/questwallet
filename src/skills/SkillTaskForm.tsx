@@ -7,7 +7,6 @@ const EMOJI_QUICK = ['🧩', '📚', '🛠️', '🦉', '🔤', '🎬', '💪', 
 export interface SkillTaskFormValues {
   title: string
   emoji: string
-  reward: number
   xpReward: number
 }
 
@@ -20,7 +19,6 @@ interface SkillTaskFormProps {
 export function SkillTaskForm({ initial, onSubmit, onDelete }: SkillTaskFormProps) {
   const [title, setTitle] = useState(initial?.title ?? '')
   const [emoji, setEmoji] = useState(initial?.emoji ?? '⭐')
-  const [reward, setReward] = useState<string>(initial?.reward.toString() ?? '300')
   const [xpReward, setXpReward] = useState<string>(initial?.xpReward.toString() ?? '15')
   const [err, setErr] = useState<string | null>(null)
 
@@ -29,17 +27,14 @@ export function SkillTaskForm({ initial, onSubmit, onDelete }: SkillTaskFormProp
     setErr(null)
     const trimmedTitle = title.trim()
     const trimmedEmoji = emoji.trim()
-    const rewardNum = Number(reward)
     const xpNum = Number(xpReward)
 
     if (!trimmedTitle) return setErr('Введи название')
     if (trimmedTitle.length > 80) return setErr('Название слишком длинное')
     if (!trimmedEmoji) return setErr('Выбери эмодзи')
-    if (!Number.isFinite(rewardNum) || rewardNum <= 0) return setErr('Награда должна быть больше 0')
-    if (rewardNum > 1_000_000_000) return setErr('Слишком большая сумма')
-    if (!Number.isFinite(xpNum) || xpNum < 0 || xpNum > 1000) return setErr('XP от 0 до 1000')
+    if (!Number.isFinite(xpNum) || xpNum <= 0 || xpNum > 1000) return setErr('Баллы от 1 до 1000')
 
-    onSubmit({ title: trimmedTitle, emoji: trimmedEmoji, reward: rewardNum, xpReward: xpNum })
+    onSubmit({ title: trimmedTitle, emoji: trimmedEmoji, xpReward: xpNum })
   }
 
   return (
@@ -84,30 +79,17 @@ export function SkillTaskForm({ initial, onSubmit, onDelete }: SkillTaskFormProp
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <label className="block">
-          <span className="text-sm text-white/70 font-semibold mb-1.5 block">Награда</span>
-          <input
-            type="number"
-            value={reward}
-            onChange={(e) => setReward(e.target.value)}
-            inputMode="numeric"
-            min={1}
-            className="w-full bg-black/30 border border-white/10 rounded-xl px-3 py-3 text-white tabular-nums focus:border-[var(--color-gold)]/50 focus:outline-none transition"
-          />
-        </label>
-        <label className="block">
-          <span className="text-sm text-white/70 font-semibold mb-1.5 block">XP в навык</span>
-          <input
-            type="number"
-            value={xpReward}
-            onChange={(e) => setXpReward(e.target.value)}
-            inputMode="numeric"
-            min={0}
-            className="w-full bg-black/30 border border-white/10 rounded-xl px-3 py-3 text-white tabular-nums focus:border-[var(--color-gold)]/50 focus:outline-none transition"
-          />
-        </label>
-      </div>
+      <label className="block">
+        <span className="text-sm text-white/70 font-semibold mb-1.5 block">Баллы за выполнение</span>
+        <input
+          type="number"
+          value={xpReward}
+          onChange={(e) => setXpReward(e.target.value)}
+          inputMode="numeric"
+          min={1}
+          className="w-full bg-black/30 border border-white/10 rounded-xl px-3 py-3 text-white tabular-nums focus:border-[var(--color-gold)]/50 focus:outline-none transition"
+        />
+      </label>
 
       {err && (
         <div className="text-sm text-[var(--color-coral)] bg-[var(--color-coral)]/10 border border-[var(--color-coral)]/30 rounded-lg px-3 py-2">
