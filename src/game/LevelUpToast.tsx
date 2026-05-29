@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Sparkles } from 'lucide-react'
 import confetti from 'canvas-confetti'
+import { feedbackLevelUp } from '../lib/feedback'
 
 interface LevelUpToastProps {
   level: number | null
@@ -11,6 +12,7 @@ interface LevelUpToastProps {
 export function LevelUpToast({ level, onClose }: LevelUpToastProps) {
   useEffect(() => {
     if (level === null) return
+    feedbackLevelUp()
     confetti({
       particleCount: 90,
       spread: 70,

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, Sparkles } from 'lucide-react'
 import confetti from 'canvas-confetti'
+import { feedbackGoal } from '../lib/feedback'
 import { useAppState } from '../state/AppStateContext'
 import { GoalCard } from '../goals/GoalCard'
 import { GoalForm, type GoalFormValues } from '../goals/GoalForm'
@@ -184,6 +185,7 @@ export function GoalsScreen() {
 }
 
 function fireConfetti() {
+  feedbackGoal()
   confetti({
     particleCount: 120,
     spread: 80,

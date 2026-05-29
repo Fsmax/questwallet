@@ -71,8 +71,10 @@ export interface AppState {
   balance: number
   totalEarned: number
   xp: number
+  totalCompleted: number
   streak: number
   streakIncrementedToday: boolean
+  unlockedAchievements: string[]
   lastActiveDate: string
   lastResetDate: string
   lastNotifiedDate: NotifyState

@@ -19,6 +19,7 @@ import {
 } from '../storage/storage'
 import { ensureDefaults } from '../storage/ensureDefaults'
 import { SEED_SKILLS } from '../lib/seed'
+import { newlyUnlocked } from '../achievements/compute'
 import { dailyResetIfNeeded } from '../finance/game'
 import { getCurrentDay } from '../lib/dates'
 import {
@@ -53,6 +54,8 @@ export interface AppStateApi {
   error: string | null
   notice: string | null
   clearNotice: () => void
+  achievementUnlocked: string | null
+  clearAchievementToast: () => void
   // Финансовые операции (синхронные, обновляют state и шлют в облако с debounce)
   earn: (taskId: string) => void
   cancel: (taskId: string) => void
@@ -101,6 +104,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<AppStatus>('loading')
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
+  const [achievementUnlocked, setAchievementUnlocked] = useState<string | null>(null)
 
   const stateRef = useRef<AppState | null>(null)
   const versionRef = useRef(0)
@@ -198,6 +202,18 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     return () => clearInterval(id)
   }, [status, commit])
 
+  // Авто-разблокировка достижений при изменении state
+  useEffect(() => {
+    if (!state) return
+    const fresh = newlyUnlocked(state)
+    if (fresh.length === 0) return
+    commit({
+      ...state,
+      unlockedAchievements: [...state.unlockedAchievements, ...fresh],
+    })
+    setAchievementUnlocked(fresh[0])
+  }, [state, commit])
+
   const commitWithTx = useCallback(
     (next: AppState, tx: Transaction | null) => {
       commit(next)
@@ -236,6 +252,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       error,
       notice,
       clearNotice: () => setNotice(null),
+      achievementUnlocked,
+      clearAchievementToast: () => setAchievementUnlocked(null),
 
       earn: (taskId) => {
         safe(() => {
@@ -370,7 +388,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         }
       },
     }
-  }, [state, status, error, notice, commit, commitWithTx, safe, userId])
+  }, [state, status, error, notice, achievementUnlocked, commit, commitWithTx, safe, userId])
 
   return <Ctx.Provider value={api}>{children}</Ctx.Provider>
 }

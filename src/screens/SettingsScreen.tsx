@@ -3,6 +3,7 @@ import { useAuth } from '../auth/useAuth'
 import { CurrencySwitch } from '../settings/CurrencySwitch'
 import { DayResetSelect } from '../settings/DayResetSelect'
 import { RemindersSection } from '../settings/RemindersSection'
+import { FeedbackSection } from '../settings/FeedbackSection'
 import { ExportImportSection } from '../settings/ExportImportSection'
 import { DangerSection } from '../settings/DangerSection'
 import { SettingsCard, SettingsRow } from '../settings/SettingsCard'
@@ -31,6 +32,7 @@ export function SettingsScreen() {
       <CurrencySwitch />
       <DayResetSelect />
       <RemindersSection />
+      <FeedbackSection />
       <ExportImportSection />
       <DangerSection />
     </div>

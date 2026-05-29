@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { Check, RotateCcw, Pencil } from 'lucide-react'
 import type { Task, Currency } from '../types'
 import { formatMoney } from '../lib/format'
+import { feedbackComplete } from '../lib/feedback'
 import { FloatingReward } from './FloatingReward'
 
 interface QuestCardProps {
@@ -18,6 +19,7 @@ export function QuestCard({ task, currency, onComplete, onCancel, onEdit }: Ques
 
   const handleComplete = () => {
     setFloating(true)
+    feedbackComplete()
     setTimeout(() => setFloating(false), 900)
     onComplete()
   }

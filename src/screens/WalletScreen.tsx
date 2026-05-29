@@ -7,11 +7,15 @@ import { BalanceCard } from '../dashboard/BalanceCard'
 import { Modal } from '../components/Modal'
 import { SpendDialog } from '../wallet/SpendDialog'
 import { TransactionsList } from '../wallet/TransactionsList'
+import { StatsView } from '../wallet/StatsView'
+
+type WalletTab = 'history' | 'stats'
 
 export function WalletScreen() {
   const { state, spend } = useAppState()
   const auth = useAuth()
   const [spendOpen, setSpendOpen] = useState(false)
+  const [tab, setTab] = useState<WalletTab>('history')
 
   if (!state || !auth.user) return null
 
@@ -42,16 +46,50 @@ export function WalletScreen() {
         </button>
       </motion.div>
 
+      {/* Под-табы: История / Статистика */}
       <motion.div variants={{ hidden: { opacity: 0, y: 8 }, visible: { opacity: 1, y: 0 } }}>
-        <h2 className="text-sm uppercase tracking-wide text-white/40 font-bold mb-2 px-1">
-          История операций
-        </h2>
-        <TransactionsList state={state} userId={auth.user.id} currency={state.currency} />
+        <div className="flex bg-black/20 rounded-xl p-1 gap-1">
+          <TabButton active={tab === 'history'} onClick={() => setTab('history')}>
+            История
+          </TabButton>
+          <TabButton active={tab === 'stats'} onClick={() => setTab('stats')}>
+            Статистика
+          </TabButton>
+        </div>
+      </motion.div>
+
+      <motion.div variants={{ hidden: { opacity: 0, y: 8 }, visible: { opacity: 1, y: 0 } }}>
+        {tab === 'history' ? (
+          <TransactionsList state={state} userId={auth.user.id} currency={state.currency} />
+        ) : (
+          <StatsView state={state} userId={auth.user.id} currency={state.currency} />
+        )}
       </motion.div>
 
       <Modal open={spendOpen} onClose={() => setSpendOpen(false)} title="Расход">
         <SpendDialog balance={state.balance} currency={state.currency} onSubmit={handleSpend} />
       </Modal>
     </motion.div>
+  )
+}
+
+function TabButton({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean
+  onClick: () => void
+  children: React.ReactNode
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex-1 py-2 rounded-lg text-sm font-bold transition ${
+        active ? 'bg-[var(--color-gold)] text-[var(--color-bg-deep)]' : 'text-white/60 hover:text-white'
+      }`}
+    >
+      {children}
+    </button>
   )
 }

@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { Check, RotateCcw, Pencil } from 'lucide-react'
 import type { SkillTask, Currency } from '../types'
 import { formatMoney } from '../lib/format'
+import { feedbackComplete } from '../lib/feedback'
 import { FloatingReward } from '../quests/FloatingReward'
 
 interface SkillTaskRowProps {
@@ -18,6 +19,7 @@ export function SkillTaskRow({ task, currency, onComplete, onCancel, onEdit }: S
 
   const handleComplete = () => {
     setFloating(true)
+    feedbackComplete()
     setTimeout(() => setFloating(false), 900)
     onComplete()
   }

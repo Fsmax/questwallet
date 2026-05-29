@@ -62,5 +62,14 @@ export function ensureDefaults(state: AppState): AppState {
     changed = true
   }
 
+  if (typeof next.totalCompleted !== 'number') {
+    next = { ...next, totalCompleted: 0 }
+    changed = true
+  }
+  if (!Array.isArray(next.unlockedAchievements)) {
+    next = { ...next, unlockedAchievements: [] }
+    changed = true
+  }
+
   return changed ? next : state
 }
