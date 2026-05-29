@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useAppState } from '../state/AppStateContext'
 import { getCurrentDay } from '../lib/dates'
+import { dueRecurring } from '../finance/expenses'
 
 /**
  * Проверяет при открытии и каждую минуту: пора ли показать утреннее/вечернее уведомление.
@@ -24,8 +25,20 @@ export function useReminders() {
       // Утро
       if (cur.lastNotifiedDate.morning !== today && hhmm >= cur.reminders.morningTime) {
         const pending = cur.tasks.filter((t) => !t.doneToday).length
+        const dueRec = dueRecurring(cur, now).length
+        const dueDebts = cur.debts.filter(
+          (d) => !d.settledAt && d.dueDate !== null && d.dueDate <= today,
+        ).length
+
+        const extras: string[] = []
+        if (dueRec > 0) extras.push(`${dueRec} регулярных платежей`)
+        if (dueDebts > 0) extras.push(`${dueDebts} долгов к сроку`)
+        const tail = extras.length ? ` · ${extras.join(', ')}` : ''
+
         if (pending > 0) {
-          showNotification('Доброе утро! 🎯', `У тебя ${pending} квестов на сегодня`)
+          showNotification('Доброе утро! 🎯', `У тебя ${pending} квестов на сегодня${tail}`)
+        } else if (extras.length) {
+          showNotification('Доброе утро! 📋', `Квесты закрыты, но есть:${tail}`)
         } else {
           showNotification('Доброе утро! ✨', 'Все квесты уже закрыты — отличный старт!')
         }

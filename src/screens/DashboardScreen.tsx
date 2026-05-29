@@ -5,8 +5,11 @@ import { BalanceCard } from '../dashboard/BalanceCard'
 import { StreakCard } from '../dashboard/StreakCard'
 import { DayProgress } from '../dashboard/DayProgress'
 import { NearestGoalCard } from '../dashboard/NearestGoalCard'
+import { NetWorthCard } from '../dashboard/NetWorthCard'
+import { WelcomeCard } from '../dashboard/WelcomeCard'
 import { AchievementsGrid } from '../achievements/AchievementsGrid'
 import { visibleStreak } from '../finance/game'
+import { debtTotals } from '../finance/debts'
 
 export function DashboardScreen() {
   const { state } = useAppState()
@@ -14,6 +17,9 @@ export function DashboardScreen() {
 
   const done = state.tasks.filter((t) => t.doneToday).length
   const total = state.tasks.length
+  const goalsSaved = state.goals.reduce((s, g) => s + g.saved, 0)
+  const totals = debtTotals(state.debts)
+  const isFresh = state.balance === 0 && state.transactions.length === 0
   const activeGoals = state.goals.filter((g) => !g.completedAt)
   const nearest = activeGoals.length
     ? [...activeGoals].sort(
@@ -46,6 +52,12 @@ export function DashboardScreen() {
         </div>
       </motion.div>
 
+      {isFresh && (
+        <motion.div variants={{ hidden: { opacity: 0, y: 8 }, visible: { opacity: 1, y: 0 } }}>
+          <WelcomeCard />
+        </motion.div>
+      )}
+
       {/* На десктопе — 2 колонки, на мобиле — один поток */}
       <div className="grid lg:grid-cols-2 gap-4">
         {/* Левая колонка */}
@@ -53,6 +65,13 @@ export function DashboardScreen() {
           variants={{ hidden: { opacity: 0, y: 8 }, visible: { opacity: 1, y: 0 } }}
           className="space-y-4"
         >
+          <NetWorthCard
+            balance={state.balance}
+            goalsSaved={goalsSaved}
+            owedToMe={totals.owedToMe}
+            iOwe={totals.iOwe}
+            currency={state.currency}
+          />
           <BalanceCard balance={state.balance} currency={state.currency} />
           <DayProgress done={done} total={total} />
         </motion.div>

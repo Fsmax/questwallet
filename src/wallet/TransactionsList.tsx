@@ -17,6 +17,10 @@ interface TransactionsListProps {
 
 const PAGE_SIZE = 50
 
+// Поступления (баланс +). Остальное считаем списаниями.
+const INFLOW = new Set(['earn', 'deposit', 'collect', 'borrow', 'withdraw'])
+type TxFilter = 'all' | 'in' | 'out'
+
 export function TransactionsList({ state, userId, currency }: TransactionsListProps) {
   const { editTransaction, deleteTransaction } = useAppState()
   const [extra, setExtra] = useState<Transaction[]>([])
@@ -24,6 +28,8 @@ export function TransactionsList({ state, userId, currency }: TransactionsListPr
   const [hasMore, setHasMore] = useState(true)
   const [err, setErr] = useState<string | null>(null)
   const [editing, setEditing] = useState<Transaction | null>(null)
+  const [query, setQuery] = useState('')
+  const [filter, setFilter] = useState<TxFilter>('all')
 
   // Править/удалять можно только ручные операции (расход/пополнение), которые есть
   // в свежем срезе state (инлайн) — для них корректно откатывается баланс.
@@ -54,7 +60,20 @@ export function TransactionsList({ state, userId, currency }: TransactionsListPr
     return out.sort((a, b) => b.timestamp - a.timestamp)
   }, [state.transactions, extra])
 
-  const grouped = useMemo(() => groupByDay(all, state.timezone, state.dayResetHour), [all, state.timezone, state.dayResetHour])
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    return all.filter((tx) => {
+      if (filter === 'in' && !INFLOW.has(tx.type)) return false
+      if (filter === 'out' && INFLOW.has(tx.type)) return false
+      if (q && !tx.label.toLowerCase().includes(q)) return false
+      return true
+    })
+  }, [all, filter, query])
+
+  const grouped = useMemo(
+    () => groupByDay(filtered, state.timezone, state.dayResetHour),
+    [filtered, state.timezone, state.dayResetHour],
+  )
 
   const handleLoadMore = async () => {
     setLoading(true)
@@ -82,6 +101,42 @@ export function TransactionsList({ state, userId, currency }: TransactionsListPr
 
   return (
     <div className="space-y-4">
+      {/* Поиск + фильтр */}
+      <div className="space-y-2">
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Поиск по названию"
+          className="w-full bg-black/30 border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-[var(--color-gold)]/50 focus:outline-none transition"
+        />
+        <div className="flex bg-black/20 rounded-xl p-1 gap-1">
+          {(
+            [
+              ['all', 'Все'],
+              ['in', 'Поступления'],
+              ['out', 'Списания'],
+            ] as [TxFilter, string][]
+          ).map(([key, label]) => (
+            <button
+              key={key}
+              onClick={() => setFilter(key)}
+              className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition ${
+                filter === key
+                  ? 'bg-[var(--color-gold)] text-[var(--color-bg-deep)]'
+                  : 'text-white/60 hover:text-white'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {grouped.length === 0 && (
+        <div className="text-center text-sm text-white/40 py-8">Ничего не найдено</div>
+      )}
+
       {grouped.map(([label, txs]) => (
         <div key={label}>
           <div className="text-xs uppercase tracking-wide text-white/40 font-bold mb-1 px-3">

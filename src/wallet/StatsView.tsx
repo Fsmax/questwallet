@@ -17,6 +17,7 @@ const RANGE = 14
 export function StatsView({ state, userId, currency }: StatsViewProps) {
   const [txs, setTxs] = useState<Transaction[] | null>(null)
   const [err, setErr] = useState<string | null>(null)
+  const [catPeriod, setCatPeriod] = useState<'month' | 'all'>('month')
 
   useEffect(() => {
     let cancelled = false
@@ -45,13 +46,13 @@ export function StatsView({ state, userId, currency }: StatsViewProps) {
     [txs, state.timezone, state.dayResetHour],
   )
   const summary = useMemo(() => (txs ? summarize(txs) : null), [txs])
-  const categories = useMemo(
-    () => (txs ? categoryBreakdown(txs, state.expenseCategories) : []),
-    [txs, state.expenseCategories],
-  )
   const monthStart = useMemo(
     () => monthStartTimestamp(getCurrentDay(new Date(), state.timezone, state.dayResetHour).slice(0, 7)),
     [state.timezone, state.dayResetHour],
+  )
+  const categories = useMemo(
+    () => (txs ? categoryBreakdown(txs, state.expenseCategories, catPeriod === 'month' ? monthStart : 0) : []),
+    [txs, state.expenseCategories, catPeriod, monthStart],
   )
   const budgets = useMemo(
     () => (txs ? budgetStatus(txs, state.expenseCategories, monthStart) : []),
@@ -179,7 +180,29 @@ export function StatsView({ state, userId, currency }: StatsViewProps) {
       {/* Расходы по категориям */}
       {categories.length > 0 && (
         <div className="rounded-2xl p-4 bg-white/5 border border-white/10">
-          <h3 className="text-sm font-bold text-white mb-3">Куда уходят деньги</h3>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-bold text-white">Куда уходят деньги</h3>
+            <div className="flex bg-black/20 rounded-lg p-0.5 gap-0.5">
+              {(
+                [
+                  ['month', 'Месяц'],
+                  ['all', 'Всё время'],
+                ] as ['month' | 'all', string][]
+              ).map(([key, label]) => (
+                <button
+                  key={key}
+                  onClick={() => setCatPeriod(key)}
+                  className={`px-2 py-1 rounded-md text-xs font-bold transition ${
+                    catPeriod === key
+                      ? 'bg-[var(--color-gold)] text-[var(--color-bg-deep)]'
+                      : 'text-white/50 hover:text-white'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
           <div className="space-y-2.5">
             {categories.map((c) => (
               <div key={c.id}>
