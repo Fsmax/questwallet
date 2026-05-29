@@ -233,6 +233,36 @@ export function applySpend(
   return { state: newState, tx }
 }
 
+/**
+ * Пополнить кошелёк своими деньгами (не игровой заработок).
+ * Не влияет на totalEarned/XP/streak — это просто внесение наличных.
+ */
+export function applyDeposit(
+  state: AppState,
+  amount: number,
+  now: Date,
+  label?: string,
+): ApplyResult {
+  validateAmount(amount)
+  const trimmedLabel = label && label.trim() ? validateLabel(label) : 'Пополнение'
+
+  const tx: Transaction = {
+    id: newTxId(),
+    type: 'deposit',
+    amount,
+    label: trimmedLabel,
+    timestamp: now.getTime(),
+  }
+
+  const newState: AppState = {
+    ...state,
+    balance: state.balance + amount,
+    transactions: appendTx(state, tx),
+  }
+
+  return { state: newState, tx }
+}
+
 // ============= Жизненный цикл сущностей =============
 
 export type DeleteGoalMode = 'return_to_wallet' | 'discard'

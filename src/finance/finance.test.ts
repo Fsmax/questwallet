@@ -5,6 +5,7 @@ import {
   applySave,
   applyWithdraw,
   applySpend,
+  applyDeposit,
   applyDeleteGoal,
   applyDeleteTask,
   applyEditGoal,
@@ -338,5 +339,33 @@ describe('applyAddTask / applyAddGoal', () => {
     expect(() =>
       applyAddTask(s, { title: 'OK', emoji: '⭐', reward: -10, xpReward: 5 }),
     ).toThrow(FinanceError)
+  })
+})
+
+describe('applyDeposit', () => {
+  it('пополняет баланс и создаёт tx deposit', () => {
+    const s = makeState({ balance: 1000 })
+    const { state, tx } = applyDeposit(s, 5000, NOW)
+    expect(state.balance).toBe(6000)
+    expect(tx.type).toBe('deposit')
+    expect(tx.amount).toBe(5000)
+    expect(tx.label).toBe('Пополнение')
+  })
+
+  it('не влияет на totalEarned и xp', () => {
+    const s = makeState({ balance: 0, totalEarned: 100, xp: 50 })
+    const { state } = applyDeposit(s, 5000, NOW)
+    expect(state.totalEarned).toBe(100)
+    expect(state.xp).toBe(50)
+  })
+
+  it('принимает свою заметку', () => {
+    const { tx } = applyDeposit(makeState(), 200, NOW, 'Зарплата')
+    expect(tx.label).toBe('Зарплата')
+  })
+
+  it('сумма ≤ 0 → ошибка', () => {
+    expect(() => applyDeposit(makeState(), 0, NOW)).toThrow(FinanceError)
+    expect(() => applyDeposit(makeState(), -10, NOW)).toThrow(FinanceError)
   })
 })

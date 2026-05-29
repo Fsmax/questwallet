@@ -28,6 +28,7 @@ import {
   applySave,
   applyWithdraw,
   applySpend,
+  applyDeposit,
   applyDeleteGoal,
   applyDeleteTask,
   applyEditGoal,
@@ -60,6 +61,7 @@ import {
   applyEditDebt,
   applyDeleteDebt,
 } from '../finance/debts'
+import { convertState } from '../finance/currency'
 
 export type AppStatus = 'loading' | 'ready' | 'error'
 
@@ -77,6 +79,7 @@ export interface AppStateApi {
   save: (goalId: string, amount: number) => void
   withdraw: (goalId: string, amount: number) => void
   spend: (amount: number, label: string, category?: string) => void
+  deposit: (amount: number, label?: string) => void
   // Жизненный цикл
   addTask: (input: { title: string; emoji: string; reward: number; xpReward: number }) => void
   editTask: (taskId: string, patch: { title?: string; emoji?: string; reward?: number; xpReward?: number }) => void
@@ -86,6 +89,7 @@ export interface AppStateApi {
   deleteGoal: (goalId: string, mode: DeleteGoalMode) => void
   // Настройки
   setCurrency: (c: Currency) => void
+  convertCurrency: (to: Currency, rate: number) => void
   setDayResetHour: (h: number) => void
   setReminders: (patch: Partial<RemindersConfig>) => void
   markNotified: (kind: 'morning' | 'evening', day: string) => void
@@ -324,6 +328,12 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
           commitWithTx(r.state, r.tx)
         })
       },
+      deposit: (amount, label) => {
+        safe(() => {
+          const r = applyDeposit(requireState(), amount, new Date(), label)
+          commitWithTx(r.state, r.tx)
+        })
+      },
       addTask: (input) => {
         safe(() => commit(applyAddTask(requireState(), input)))
       },
@@ -438,6 +448,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
 
       setCurrency: (currency) => {
         safe(() => commit({ ...requireState(), currency }))
+      },
+      convertCurrency: (to, rate) => {
+        safe(() => commit(convertState(requireState(), to, rate)))
       },
       setDayResetHour: (dayResetHour) => {
         safe(() => commit({ ...requireState(), dayResetHour }))

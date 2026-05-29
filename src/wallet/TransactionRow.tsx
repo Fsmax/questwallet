@@ -5,6 +5,7 @@ import {
   ArrowUpFromLine,
   HandCoins,
   Landmark,
+  Banknote,
 } from 'lucide-react'
 import type { Transaction, Currency, TxType } from '../types'
 import { formatMoney } from '../lib/format'
@@ -24,6 +25,7 @@ const META: Record<TxType, { Icon: typeof TrendingUp; color: string; bg: string;
   collect: { Icon: HandCoins, color: 'text-[var(--color-emerald-quest)]', bg: 'bg-[var(--color-emerald-quest)]/15', sign: '+' },
   borrow: { Icon: Landmark, color: 'text-[var(--color-emerald-quest)]', bg: 'bg-[var(--color-emerald-quest)]/15', sign: '+' },
   settle: { Icon: Landmark, color: 'text-[var(--color-coral)]', bg: 'bg-[var(--color-coral)]/15', sign: '-' },
+  deposit: { Icon: Banknote, color: 'text-[var(--color-emerald-quest)]', bg: 'bg-[var(--color-emerald-quest)]/15', sign: '+' },
 }
 
 export function TransactionRow({ tx, currency }: TransactionRowProps) {
