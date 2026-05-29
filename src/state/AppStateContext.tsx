@@ -183,14 +183,16 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         versionRef.current = newVersion
         setVersion(newVersion)
       },
-      async (serverVersion) => {
-        setNotice('Данные обновлены на другом устройстве. Подтянул свежие.')
-        const fresh = await loadState(userId)
-        const withReset = dailyResetIfNeeded(fresh.state, new Date())
-        setState(withReset)
+      (serverVersion) => {
+        // Конфликт версий: сохраняем ТЕКУЩЕЕ локальное состояние поверх свежей версии
+        // сервера (last-writer-wins по этому устройству), чтобы не потерять только что
+        // сделанные правки. Раньше затягивалось серверное и локальное терялось.
+        versionRef.current = serverVersion
         setVersion(serverVersion)
-        if (withReset !== fresh.state) {
-          saverRef.current?.save(withReset)
+        const local = stateRef.current
+        if (local) {
+          setNotice('Были изменения с другого устройства — сохранил твою версию поверх.')
+          saverRef.current?.save(local)
         }
       },
       (err) => {
