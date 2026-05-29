@@ -57,7 +57,7 @@ export function useReminders() {
 
 function showNotification(title: string, body: string) {
   try {
-    new Notification(title, { body, icon: '/favicon.svg' })
+    new Notification(title, { body, icon: '/pwa-192x192.png' })
   } catch {
     /* ignore */
   }
