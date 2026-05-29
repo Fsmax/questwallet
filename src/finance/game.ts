@@ -70,6 +70,8 @@ export function dailyResetIfNeeded(state: AppState, now: Date): AppState {
     skillTasks: state.skillTasks.map((t) => ({ ...t, doneToday: false })),
     // lastRemindedDate не чистим: вчерашняя дата уже !== today, напоминания сработают.
     dayTasks: state.dayTasks.map((t) => ({ ...t, done: false })),
+    // Заработанные за прошлый день деньги остаются; сбрасываем только отметку и ссылку на tx.
+    workTasks: state.workTasks.map((t) => ({ ...t, doneToday: false, lastEarnTxId: null })),
   }
 }
 

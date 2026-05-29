@@ -161,6 +161,7 @@ export function createInitialState(now: Date = new Date()): AppState {
     skills,
     skillTasks,
     dayTasks,
+    workTasks: [],
     goals,
     transactions: [],
     expenseCategories: seedCategories(),

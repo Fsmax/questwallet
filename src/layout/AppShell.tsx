@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import {
   CalendarCheck,
   Rocket,
+  Briefcase,
   Wallet,
   Settings as SettingsIcon,
   Sparkles,
@@ -16,6 +17,9 @@ const MyDayScreen = lazy(() =>
 )
 const GrowthScreen = lazy(() =>
   import('../screens/GrowthScreen').then((m) => ({ default: m.GrowthScreen })),
+)
+const WorkScreen = lazy(() =>
+  import('../screens/WorkScreen').then((m) => ({ default: m.WorkScreen })),
 )
 const FinanceScreen = lazy(() =>
   import('../screens/FinanceScreen').then((m) => ({ default: m.FinanceScreen })),
@@ -33,11 +37,12 @@ import { Modal } from '../components/Modal'
 import { formatMoney } from '../lib/format'
 import type { AppState } from '../types'
 
-export type Tab = 'myday' | 'growth' | 'finance' | 'settings'
+export type Tab = 'myday' | 'growth' | 'work' | 'finance' | 'settings'
 
 const MAIN_TABS: { id: Tab; label: string; Icon: typeof Rocket }[] = [
   { id: 'myday', label: 'Мой день', Icon: CalendarCheck },
   { id: 'growth', label: 'Личный рост', Icon: Rocket },
+  { id: 'work', label: 'Работа', Icon: Briefcase },
   { id: 'finance', label: 'Финансы', Icon: Wallet },
 ]
 
@@ -169,6 +174,7 @@ function ShellInner() {
                 >
                   {tab === 'myday' && <MyDayScreen />}
                   {tab === 'growth' && <GrowthScreen />}
+                  {tab === 'work' && <WorkScreen />}
                   {tab === 'finance' && <FinanceScreen />}
                   {tab === 'settings' && <SettingsScreen />}
                 </Suspense>

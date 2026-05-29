@@ -8,11 +8,16 @@ import { DayProgress } from '../dashboard/DayProgress'
 import { WelcomeCard } from '../dashboard/WelcomeCard'
 import { DayTaskRow } from '../myday/DayTaskRow'
 import { DayTaskForm, type DayTaskFormValues } from '../myday/DayTaskForm'
+import { WorkTaskRow } from '../work/WorkTaskRow'
 import { Modal } from '../components/Modal'
 import { visibleStreak } from '../finance/game'
-import type { DayTask } from '../types'
+import type { DayTask, WorkTask } from '../types'
 
 type Editing = { mode: 'new' } | { mode: 'edit'; task: DayTask } | null
+
+type DayItem =
+  | { kind: 'day'; time: string | null; task: DayTask }
+  | { kind: 'work'; time: string | null; task: WorkTask }
 
 export function MyDayScreen() {
   const {
@@ -22,6 +27,8 @@ export function MyDayScreen() {
     deleteDayTask,
     completeDayTask,
     uncompleteDayTask,
+    completeWorkTask,
+    uncompleteWorkTask,
   } = useAppState()
   const [editing, setEditing] = useState<Editing>(null)
 
@@ -48,14 +55,23 @@ export function MyDayScreen() {
     state.skillTasks.filter((t) => t.doneToday).reduce((s, t) => s + t.xpReward, 0)
 
   const streak = visibleStreak(state, new Date())
-  const dayTasks = [...state.dayTasks].sort((a, b) => {
+
+  // Расписание дня — дела дня + рабочие таски с галочкой «показывать в Мой день».
+  const myDayWork = state.workTasks.filter((t) => t.showInMyDay)
+  const items: DayItem[] = [
+    ...state.dayTasks.map((t) => ({ kind: 'day' as const, time: t.time, task: t })),
+    ...myDayWork.map((t) => ({ kind: 'work' as const, time: t.time, task: t })),
+  ].sort((a, b) => {
     const ta = a.time ?? '99:99'
     const tb = b.time ?? '99:99'
     if (ta !== tb) return ta < tb ? -1 : 1
-    return a.order - b.order
+    return a.task.order - b.task.order
   })
-  const doneCount = state.dayTasks.filter((t) => t.done).length
-  const hasDayTasks = state.dayTasks.length > 0
+
+  const totalCount = state.dayTasks.length + myDayWork.length
+  const doneCount =
+    state.dayTasks.filter((t) => t.done).length + myDayWork.filter((t) => t.doneToday).length
+  const hasDayTasks = totalCount > 0
   const isFresh = state.balance === 0 && state.transactions.length === 0
 
   return (
@@ -103,7 +119,7 @@ export function MyDayScreen() {
       <motion.div variants={{ hidden: { opacity: 0, y: 8 }, visible: { opacity: 1, y: 0 } }}>
         <DayProgress
           done={doneCount}
-          total={state.dayTasks.length}
+          total={totalCount}
           label="Дела на сегодня"
           Icon={CalendarCheck}
           doneMessage="✨ Все дела на сегодня закрыты"
@@ -130,15 +146,25 @@ export function MyDayScreen() {
       ) : (
         <motion.div className="space-y-2">
           <AnimatePresence>
-            {dayTasks.map((task) => (
-              <DayTaskRow
-                key={task.id}
-                task={task}
-                onComplete={() => completeDayTask(task.id)}
-                onUncomplete={() => uncompleteDayTask(task.id)}
-                onEdit={() => setEditing({ mode: 'edit', task })}
-              />
-            ))}
+            {items.map((item) =>
+              item.kind === 'day' ? (
+                <DayTaskRow
+                  key={`d-${item.task.id}`}
+                  task={item.task}
+                  onComplete={() => completeDayTask(item.task.id)}
+                  onUncomplete={() => uncompleteDayTask(item.task.id)}
+                  onEdit={() => setEditing({ mode: 'edit', task: item.task })}
+                />
+              ) : (
+                <WorkTaskRow
+                  key={`w-${item.task.id}`}
+                  task={item.task}
+                  currency={state.currency}
+                  onComplete={() => completeWorkTask(item.task.id)}
+                  onUncomplete={() => uncompleteWorkTask(item.task.id)}
+                />
+              ),
+            )}
           </AnimatePresence>
         </motion.div>
       )}
