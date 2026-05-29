@@ -4,6 +4,7 @@ import { Plus, Sparkles } from 'lucide-react'
 import confetti from 'canvas-confetti'
 import { feedbackGoal } from '../lib/feedback'
 import { useAppState } from '../state/AppStateContext'
+import { useConfirm } from '../components/ConfirmProvider'
 import { GoalCard } from '../goals/GoalCard'
 import { GoalForm, type GoalFormValues } from '../goals/GoalForm'
 import { AmountDialog } from '../goals/AmountDialog'
@@ -21,6 +22,7 @@ type AmountDialog =
 
 export function GoalsScreen() {
   const { state, save, withdraw, addGoal, editGoal, deleteGoal } = useAppState()
+  const confirm = useConfirm()
   const [editing, setEditing] = useState<Editing>(null)
   const [amount, setAmount] = useState<AmountDialog>(null)
   const [deleting, setDeleting] = useState<Goal | null>(null)
@@ -58,12 +60,12 @@ export function GoalsScreen() {
     setEditing(null)
   }
 
-  const handleDeleteRequest = () => {
+  const handleDeleteRequest = async () => {
     if (editing?.mode !== 'edit') return
     const goal = editing.goal
     setEditing(null)
     if (goal.saved === 0) {
-      if (confirm(`Удалить цель «${goal.title}»?`)) {
+      if (await confirm({ message: `Удалить цель «${goal.title}»?`, danger: true })) {
         deleteGoal(goal.id, 'return_to_wallet')
       }
     } else {

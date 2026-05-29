@@ -12,7 +12,7 @@ export function Placeholder({ emoji, title, subtitle }: PlaceholderProps) {
         {title}
       </h1>
       <p className="text-white/50 max-w-xs">{subtitle}</p>
-      <span className="mt-6 text-xs px-3 py-1 rounded-full bg-white/5 border border-white/10 text-white/40">
+      <span className="mt-6 text-xs px-3 py-1 rounded-full bg-white/5 border border-white/10 text-white/55">
         Скоро
       </span>
     </div>

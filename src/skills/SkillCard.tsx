@@ -65,7 +65,7 @@ export function SkillCard({
                 style={{ width: `${lvl.progress * 100}%` }}
               />
             </div>
-            <span className="text-[10px] text-white/40 tabular-nums">
+            <span className="text-[10px] text-white/55 tabular-nums">
               {lvl.rem}/{lvl.need}
             </span>
           </div>
@@ -82,7 +82,7 @@ export function SkillCard({
                 e.stopPropagation()
                 onEdit()
               }}
-              className="p-1.5 rounded-lg text-white/40 hover:text-white/80 hover:bg-white/5 transition"
+              className="p-1.5 rounded-lg text-white/55 hover:text-white/80 hover:bg-white/5 transition"
               aria-label="Редактировать навык"
             >
               <Pencil size={16} />
@@ -90,7 +90,7 @@ export function SkillCard({
           )}
           <ChevronDown
             size={20}
-            className={`text-white/40 transition-transform ${expanded ? 'rotate-180' : ''}`}
+            className={`text-white/55 transition-transform ${expanded ? 'rotate-180' : ''}`}
           />
         </div>
       </button>
@@ -106,7 +106,7 @@ export function SkillCard({
           >
             <div className="p-3 space-y-2">
               {tasks.length === 0 ? (
-                <div className="text-center py-4 text-sm text-white/40">
+                <div className="text-center py-4 text-sm text-white/55">
                   Заданий в навыке пока нет
                 </div>
               ) : (

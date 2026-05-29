@@ -91,7 +91,7 @@ export function TransactionsList({ state, userId, currency }: TransactionsListPr
 
   if (all.length === 0) {
     return (
-      <div className="flex flex-col items-center text-center py-10 text-white/40">
+      <div className="flex flex-col items-center text-center py-10 text-white/55">
         <History size={36} className="mb-3" />
         <p className="text-sm">Операций пока нет</p>
         <p className="text-xs mt-1">Выполняй квесты или записывай расходы</p>
@@ -134,12 +134,12 @@ export function TransactionsList({ state, userId, currency }: TransactionsListPr
       </div>
 
       {grouped.length === 0 && (
-        <div className="text-center text-sm text-white/40 py-8">Ничего не найдено</div>
+        <div className="text-center text-sm text-white/55 py-8">Ничего не найдено</div>
       )}
 
       {grouped.map(([label, txs]) => (
         <div key={label}>
-          <div className="text-xs uppercase tracking-wide text-white/40 font-bold mb-1 px-3">
+          <div className="text-xs uppercase tracking-wide text-white/55 font-bold mb-1 px-3">
             {label}
           </div>
           <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-1">

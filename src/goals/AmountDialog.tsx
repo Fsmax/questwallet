@@ -71,7 +71,7 @@ export function AmountDialog({ max, currency, ctaLabel, ctaColor, hint, onSubmit
         ))}
       </div>
 
-      {hint && <div className="text-xs text-white/40 text-center">{hint}</div>}
+      {hint && <div className="text-xs text-white/55 text-center">{hint}</div>}
 
       {err && (
         <div className="text-sm text-[var(--color-coral)] bg-[var(--color-coral)]/10 border border-[var(--color-coral)]/30 rounded-lg px-3 py-2">

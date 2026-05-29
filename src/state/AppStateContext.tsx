@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import type { AppState, Currency, DayTask, DebtDirection, RecurringKind, RemindersConfig, Transaction } from '../types'
+import type { AppState, Currency, DayTask, DebtDirection, RecurringKind, RemindersConfig, Transaction, WorkTask } from '../types'
 import { useAuth } from '../auth/useAuth'
 import {
   loadState,
@@ -75,6 +75,13 @@ import {
   applyUncompleteDayTask,
   applyMarkDayTaskReminded,
 } from '../finance/dayTasks'
+import {
+  applyAddWorkTask,
+  applyEditWorkTask,
+  applyDeleteWorkTask,
+  applyCompleteWorkTask,
+  applyUncompleteWorkTask,
+} from '../finance/workTasks'
 import { convertState } from '../finance/currency'
 
 export type AppStatus = 'loading' | 'ready' | 'error'
@@ -143,6 +150,12 @@ export interface AppStateApi {
   completeDayTask: (id: string) => void
   uncompleteDayTask: (id: string) => void
   markDayTasksReminded: (ids: string[], day: string) => void
+  // Работа (рабочие таски: выполнение приносит деньги в кошелёк, без XP/серии)
+  addWorkTask: (input: { title: string; emoji: string; amount: number; showInMyDay: boolean; time: string | null }) => void
+  editWorkTask: (id: string, patch: Partial<Pick<WorkTask, 'title' | 'emoji' | 'amount' | 'showInMyDay' | 'time' | 'order'>>) => void
+  deleteWorkTask: (id: string) => void
+  completeWorkTask: (id: string) => void
+  uncompleteWorkTask: (id: string) => void
   // Опасные операции
   replaceState: (incoming: AppState) => void
   factoryReset: () => Promise<void>
@@ -570,6 +583,33 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
           let next = requireState()
           for (const id of ids) next = applyMarkDayTaskReminded(next, id, day)
           commit(next)
+        })
+      },
+
+      addWorkTask: (input) => {
+        safe(() => commit(applyAddWorkTask(requireState(), input, new Date())))
+      },
+      editWorkTask: (id, patch) => {
+        safe(() => commit(applyEditWorkTask(requireState(), id, patch)))
+      },
+      deleteWorkTask: (id) => {
+        safe(() => commit(applyDeleteWorkTask(requireState(), id)))
+      },
+      completeWorkTask: (id) => {
+        safe(() => {
+          const r = applyCompleteWorkTask(requireState(), id, new Date())
+          commitWithTx(r.state, r.tx)
+        })
+      },
+      uncompleteWorkTask: (id) => {
+        safe(() => {
+          const r = applyUncompleteWorkTask(requireState(), id)
+          commit(r.state)
+          if (userId && r.removedTxId) {
+            deleteTxInCloud(userId, r.removedTxId).catch((e) =>
+              console.error('Delete work-task transaction failed', e),
+            )
+          }
         })
       },
 

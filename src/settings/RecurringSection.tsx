@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Plus } from 'lucide-react'
 import { useAppState } from '../state/AppStateContext'
+import { useConfirm } from '../components/ConfirmProvider'
 import { SettingsCard } from './SettingsCard'
 import { Modal } from '../components/Modal'
 import { RecurringForm, type RecurringFormValues } from './RecurringForm'
@@ -11,11 +12,15 @@ type Editing = { mode: 'new' } | { mode: 'edit'; rec: RecurringExpense } | null
 
 export function RecurringSection() {
   const { state, addRecurring, editRecurring, deleteRecurring } = useAppState()
+  const confirm = useConfirm()
   const [editing, setEditing] = useState<Editing>(null)
 
   if (!state) return null
 
-  const list = [...state.recurringExpenses].sort((a, b) => a.dayOfMonth - b.dayOfMonth)
+  // Доход (зарплата/инвестиции) живёт во вкладке «Работа» — здесь только расходы.
+  const list = [...state.recurringExpenses]
+    .filter((r) => r.kind !== 'income')
+    .sort((a, b) => a.dayOfMonth - b.dayOfMonth)
   const catName = (id: string | null) =>
     id ? state.expenseCategories.find((c) => c.id === id)?.title ?? null : null
 
@@ -25,18 +30,21 @@ export function RecurringSection() {
     setEditing(null)
   }
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (editing?.mode !== 'edit') return
     const rec = editing.rec
     setEditing(null)
-    if (confirm(`Удалить регулярный расход «${rec.title}»?`)) deleteRecurring(rec.id)
+    if (await confirm({ message: `Удалить регулярный расход «${rec.title}»?`, danger: true })) {
+      deleteRecurring(rec.id)
+    }
   }
 
   return (
     <SettingsCard title="Регулярные платежи">
       {list.length === 0 ? (
-        <p className="text-xs text-white/40 mb-3">
-          Подписки, аренда, кредит или зарплата — добавь, и они будут напоминать о себе в Кошельке каждый месяц.
+        <p className="text-xs text-white/55 mb-3">
+          Подписки, аренда, кредит — добавь, и они будут напоминать о себе в Кошельке каждый месяц.
+          Доход (зарплата, инвестиции) настраивается во вкладке «Работа».
         </p>
       ) : (
         <div className="space-y-1 mb-3">
@@ -52,7 +60,7 @@ export function RecurringSection() {
                 <span className="text-xl">{r.emoji}</span>
                 <div className="flex-1 min-w-0">
                   <div className="text-white text-sm truncate">{r.title}</div>
-                  <div className="text-xs text-white/40">
+                  <div className="text-xs text-white/55">
                     {r.dayOfMonth}-го числа{income ? ' · доход' : cat ? ` · ${cat}` : ''}
                   </div>
                 </div>
@@ -87,6 +95,7 @@ export function RecurringSection() {
           <RecurringForm
             initial={editing.mode === 'edit' ? editing.rec : undefined}
             categories={state.expenseCategories}
+            lockKind="expense"
             onSubmit={handleSubmit}
             onDelete={editing.mode === 'edit' ? handleDelete : undefined}
           />

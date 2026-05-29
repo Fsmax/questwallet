@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import {
   CalendarCheck,
   Rocket,
+  Briefcase,
   Wallet,
   Settings as SettingsIcon,
   Sparkles,
@@ -17,6 +18,9 @@ const MyDayScreen = lazy(() =>
 const GrowthScreen = lazy(() =>
   import('../screens/GrowthScreen').then((m) => ({ default: m.GrowthScreen })),
 )
+const WorkScreen = lazy(() =>
+  import('../screens/WorkScreen').then((m) => ({ default: m.WorkScreen })),
+)
 const FinanceScreen = lazy(() =>
   import('../screens/FinanceScreen').then((m) => ({ default: m.FinanceScreen })),
 )
@@ -24,6 +28,7 @@ const SettingsScreen = lazy(() =>
   import('../screens/SettingsScreen').then((m) => ({ default: m.SettingsScreen })),
 )
 import { AppStateProvider, useAppState } from '../state/AppStateContext'
+import { ConfirmProvider } from '../components/ConfirmProvider'
 import { calcLevel } from '../finance/game'
 import { LevelUpToast } from '../game/LevelUpToast'
 import { AchievementToast } from '../achievements/AchievementToast'
@@ -33,18 +38,21 @@ import { Modal } from '../components/Modal'
 import { formatMoney } from '../lib/format'
 import type { AppState } from '../types'
 
-export type Tab = 'myday' | 'growth' | 'finance' | 'settings'
+export type Tab = 'myday' | 'growth' | 'work' | 'finance' | 'settings'
 
 const MAIN_TABS: { id: Tab; label: string; Icon: typeof Rocket }[] = [
   { id: 'myday', label: 'Мой день', Icon: CalendarCheck },
   { id: 'growth', label: 'Личный рост', Icon: Rocket },
+  { id: 'work', label: 'Работа', Icon: Briefcase },
   { id: 'finance', label: 'Финансы', Icon: Wallet },
 ]
 
 export function AppShell() {
   return (
     <AppStateProvider>
-      <ShellInner />
+      <ConfirmProvider>
+        <ShellInner />
+      </ConfirmProvider>
     </AppStateProvider>
   )
 }
@@ -169,6 +177,7 @@ function ShellInner() {
                 >
                   {tab === 'myday' && <MyDayScreen />}
                   {tab === 'growth' && <GrowthScreen />}
+                  {tab === 'work' && <WorkScreen />}
                   {tab === 'finance' && <FinanceScreen />}
                   {tab === 'settings' && <SettingsScreen />}
                 </Suspense>
@@ -339,8 +348,8 @@ function VersionCard({ title, state }: { title: string; state: AppState }) {
     <div className="bg-black/30 rounded-xl p-3 space-y-1">
       <div className="text-white/50 text-xs">{title}</div>
       <div className="text-white font-bold tabular-nums">{formatMoney(state.balance, state.currency)}</div>
-      <div className="text-white/40 text-xs">Квестов: {state.tasks.length} · Дел: {state.dayTasks.length}</div>
-      <div className="text-white/40 text-xs">Баллы: {state.xp} · Серия: {state.streak}</div>
+      <div className="text-white/55 text-xs">Квестов: {state.tasks.length} · Дел: {state.dayTasks.length}</div>
+      <div className="text-white/55 text-xs">Баллы: {state.xp} · Серия: {state.streak}</div>
     </div>
   )
 }

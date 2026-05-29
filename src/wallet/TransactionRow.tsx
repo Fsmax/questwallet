@@ -41,7 +41,7 @@ export function TransactionRow({ tx, currency, onEdit }: TransactionRowProps) {
       </div>
       <div className="flex-1 min-w-0 text-left">
         <div className="text-white text-sm truncate">{tx.label}</div>
-        <div className="text-xs text-white/40 tabular-nums">{time}</div>
+        <div className="text-xs text-white/55 tabular-nums">{time}</div>
       </div>
       <div className={`font-bold tabular-nums text-sm ${meta.color}`}>
         {meta.sign === '+' && '+'}

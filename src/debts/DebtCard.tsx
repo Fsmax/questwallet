@@ -50,7 +50,7 @@ export function DebtCard({ debt, currency, onRepay, onEdit }: DebtCardProps) {
             <div className="text-white font-bold truncate">{debt.person}</div>
             <button
               onClick={onEdit}
-              className="text-white/40 hover:text-white transition flex-shrink-0"
+              className="text-white/55 hover:text-white transition flex-shrink-0"
               aria-label="Редактировать"
             >
               <Pencil size={15} />
@@ -69,7 +69,7 @@ export function DebtCard({ debt, currency, onRepay, onEdit }: DebtCardProps) {
                   {formatMoney(remaining, currency)}
                 </span>
                 {debt.paid > 0 && (
-                  <span className="text-xs text-white/40 tabular-nums">
+                  <span className="text-xs text-white/55 tabular-nums">
                     из {formatMoney(debt.principal, currency)}
                   </span>
                 )}
@@ -89,7 +89,7 @@ export function DebtCard({ debt, currency, onRepay, onEdit }: DebtCardProps) {
           {debt.dueDate && !settled && (
             <div
               className={`flex items-center gap-1 text-xs mt-2 ${
-                overdue ? 'text-[var(--color-coral)]' : 'text-white/40'
+                overdue ? 'text-[var(--color-coral)]' : 'text-white/55'
               }`}
             >
               <CalendarClock size={13} />

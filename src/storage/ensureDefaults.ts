@@ -101,5 +101,11 @@ export function ensureDefaults(state: AppState): AppState {
     changed = true
   }
 
+  // Рабочие таски (схема v4): старым пользователям подкладываем пустой список.
+  if (!Array.isArray(next.workTasks)) {
+    next = { ...next, workTasks: [] }
+    changed = true
+  }
+
   return changed ? next : state
 }

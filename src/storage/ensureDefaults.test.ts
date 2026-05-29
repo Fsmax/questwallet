@@ -30,6 +30,7 @@ function rawState(over: Record<string, unknown> = {}): AppState {
     skills: [],
     skillTasks: [],
     dayTasks: [],
+    workTasks: [],
     goals: [],
     transactions: [],
     expenseCategories: [{ id: 'c1', title: 'Еда', emoji: '🍔', order: 0 }],

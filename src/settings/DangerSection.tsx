@@ -37,7 +37,7 @@ export function DangerSection() {
         <Trash2 size={16} />
         Полный сброс прогресса
       </button>
-      <p className="text-xs text-white/40 mt-2">
+      <p className="text-xs text-white/55 mt-2">
         Удалит весь прогресс, историю транзакций и вернёт seed-данные.
       </p>
 

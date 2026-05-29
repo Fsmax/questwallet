@@ -66,7 +66,7 @@ export function DebtForm({ initial, onSubmit, onDelete }: DebtFormProps) {
               💳 Я должен
             </DirButton>
           </div>
-          <p className="text-xs text-white/40 mt-1.5">
+          <p className="text-xs text-white/55 mt-1.5">
             {direction === 'owed_to_me'
               ? 'Сумма спишется с кошелька (ты даёшь в долг).'
               : 'Сумма добавится в кошелёк (ты берёшь в долг).'}
@@ -126,7 +126,7 @@ export function DebtForm({ initial, onSubmit, onDelete }: DebtFormProps) {
           placeholder="0"
         />
         {isEdit && (
-          <p className="text-xs text-white/40 mt-1">
+          <p className="text-xs text-white/55 mt-1">
             Правка суммы не двигает баланс — деньги меняются только при погашении.
           </p>
         )}

@@ -101,6 +101,24 @@ export interface Debt {
   settledAt: number | null // когда долг закрыт полностью
 }
 
+/**
+ * Рабочий таск: выполнение приносит деньги в кошелёк (заработок от работы).
+ * XP/уровень/серию НЕ трогает. Сбрасывается каждый день (можно заработать снова).
+ * Может показываться в «Мой день» (showInMyDay) общим со списком дел статусом.
+ */
+export interface WorkTask {
+  id: string
+  title: string
+  emoji: string
+  amount: number // сколько начисляется в кошелёк за выполнение
+  showInMyDay: boolean // показывать в «Мой день» вместе с делами дня
+  time: string | null // "HH:mm" для таймлайна «Мой день» либо null
+  doneToday: boolean
+  lastEarnTxId: string | null // id транзакции сегодняшнего заработка (нужен для отката отметки)
+  order: number
+  createdAt: number
+}
+
 /** Дело дня: задача на сегодня со временем и напоминанием. Баллов не даёт. */
 export interface DayTask {
   id: string
@@ -148,6 +166,7 @@ export interface AppState {
   skills: Skill[]
   skillTasks: SkillTask[]
   dayTasks: DayTask[]
+  workTasks: WorkTask[]
   goals: Goal[]
   transactions: Transaction[]
   expenseCategories: ExpenseCategory[]
@@ -155,5 +174,5 @@ export interface AppState {
   debts: Debt[]
 }
 
-export const CURRENT_SCHEMA_VERSION = 3
+export const CURRENT_SCHEMA_VERSION = 4
 export const MAX_TRANSACTIONS_IN_STATE = 200

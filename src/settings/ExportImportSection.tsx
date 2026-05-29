@@ -145,7 +145,7 @@ export function ExportImportSection() {
               <div className="text-white/50">Целей: <span className="text-white">{confirmImport.state.goals.length}</span></div>
               <div className="text-white/50">Баланс: <span className="text-white tabular-nums">{confirmImport.state.balance}</span></div>
             </div>
-            <p className="text-xs text-white/40">
+            <p className="text-xs text-white/55">
               Прогресс будет перезаписан. Операции из файла ({confirmImport.transactions.length}) добавятся
               в журнал — дубликаты по id пропускаются, уже существующие в облаке остаются.
             </p>

@@ -62,7 +62,7 @@ export function QuestCard({ task, onComplete, onCancel, onEdit }: QuestCardProps
 
         <button
           onClick={onEdit}
-          className="p-2 rounded-lg text-white/40 hover:text-white/80 hover:bg-white/5 transition flex-shrink-0"
+          className="p-2 rounded-lg text-white/55 hover:text-white/80 hover:bg-white/5 transition flex-shrink-0"
           aria-label="Редактировать"
         >
           <Pencil size={16} />

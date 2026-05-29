@@ -19,10 +19,12 @@ interface RecurringFormProps {
   categories: ExpenseCategory[]
   onSubmit: (values: RecurringFormValues) => void
   onDelete?: () => void
+  /** Зафиксировать вид (доход/расход) и скрыть переключатель — например, в разделе «Работа». */
+  lockKind?: RecurringKind
 }
 
-export function RecurringForm({ initial, categories, onSubmit, onDelete }: RecurringFormProps) {
-  const [kind, setKind] = useState<RecurringKind>(initial?.kind ?? 'expense')
+export function RecurringForm({ initial, categories, onSubmit, onDelete, lockKind }: RecurringFormProps) {
+  const [kind, setKind] = useState<RecurringKind>(initial?.kind ?? lockKind ?? 'expense')
   const [title, setTitle] = useState(initial?.title ?? '')
   const [emoji, setEmoji] = useState(initial?.emoji ?? '🔁')
   const [amount, setAmount] = useState<string>(initial?.amount.toString() ?? '')
@@ -58,7 +60,7 @@ export function RecurringForm({ initial, categories, onSubmit, onDelete }: Recur
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {!initial && (
+      {!initial && !lockKind && (
         <div className="flex bg-black/30 rounded-xl p-1 gap-1">
           <button
             type="button"
