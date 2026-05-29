@@ -6,6 +6,8 @@ import {
   applyWithdraw,
   applySpend,
   applyDeposit,
+  applyEditTransaction,
+  applyDeleteTransaction,
   applyDeleteGoal,
   applyDeleteTask,
   applyEditGoal,
@@ -367,5 +369,60 @@ describe('applyDeposit', () => {
   it('сумма ≤ 0 → ошибка', () => {
     expect(() => applyDeposit(makeState(), 0, NOW)).toThrow(FinanceError)
     expect(() => applyDeposit(makeState(), -10, NOW)).toThrow(FinanceError)
+  })
+})
+
+describe('applyDeleteTransaction', () => {
+  it('удаление spend возвращает деньги в баланс', () => {
+    const tx = { id: 'x', type: 'spend' as const, amount: 300, label: 'Кофе', timestamp: 1 }
+    const s = makeState({ balance: 700, transactions: [tx] })
+    const r = applyDeleteTransaction(s, tx)
+    expect(r.balance).toBe(1000)
+    expect(r.transactions).toHaveLength(0)
+  })
+
+  it('удаление deposit списывает деньги', () => {
+    const tx = { id: 'x', type: 'deposit' as const, amount: 500, label: 'Пополнение', timestamp: 1 }
+    const s = makeState({ balance: 500, transactions: [tx] })
+    expect(applyDeleteTransaction(s, tx).balance).toBe(0)
+  })
+
+  it('нельзя удалить не ручную операцию (earn)', () => {
+    const tx = { id: 'x', type: 'earn' as const, amount: 200, label: 'Награда', timestamp: 1 }
+    expect(() => applyDeleteTransaction(makeState({ transactions: [tx] }), tx)).toThrow(FinanceError)
+  })
+})
+
+describe('applyEditTransaction', () => {
+  it('увеличение spend дополнительно списывает с баланса', () => {
+    const tx = { id: 'x', type: 'spend' as const, amount: 300, label: 'Кофе', timestamp: 1 }
+    const s = makeState({ balance: 700, transactions: [tx] })
+    const r = applyEditTransaction(s, tx, { amount: 500 })
+    expect(r.state.balance).toBe(500) // 700 - (500-300)
+    expect(r.state.transactions[0].amount).toBe(500)
+  })
+
+  it('правка deposit корректирует баланс и название', () => {
+    const tx = { id: 'x', type: 'deposit' as const, amount: 500, label: 'Пополнение', timestamp: 1 }
+    const s = makeState({ balance: 500, transactions: [tx] })
+    const r = applyEditTransaction(s, tx, { amount: 800, label: 'Зарплата' })
+    expect(r.state.balance).toBe(800) // 500 + (800-500)
+    expect(r.state.transactions[0].label).toBe('Зарплата')
+  })
+
+  it('категория применяется только для существующей', () => {
+    const tx = { id: 'x', type: 'spend' as const, amount: 100, label: 'Обед', timestamp: 1 }
+    const s = makeState({
+      balance: 1000,
+      transactions: [tx],
+      expenseCategories: [{ id: 'food', title: 'Еда', emoji: '🍔', order: 0 }],
+    })
+    expect(applyEditTransaction(s, tx, { category: 'food' }).tx.category).toBe('food')
+    expect(applyEditTransaction(s, tx, { category: 'nope' }).tx.category).toBeUndefined()
+  })
+
+  it('нельзя править не ручную операцию', () => {
+    const tx = { id: 'x', type: 'save' as const, amount: 100, label: 'На цель', timestamp: 1 }
+    expect(() => applyEditTransaction(makeState({ transactions: [tx] }), tx, { amount: 50 })).toThrow(FinanceError)
   })
 })

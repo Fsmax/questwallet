@@ -193,6 +193,34 @@ export async function appendTransaction(
 }
 
 /**
+ * Изменить транзакцию в БД (ручная правка расхода/пополнения).
+ */
+export async function updateTransaction(
+  userId: string,
+  id: string,
+  patch: { amount: number; label: string; category: string | null },
+): Promise<void> {
+  const { error } = await supabase
+    .from('transactions')
+    .update({ amount: patch.amount, label: patch.label, category: patch.category })
+    .eq('id', id)
+    .eq('user_id', userId)
+  if (error) throw error
+}
+
+/**
+ * Удалить транзакцию из БД.
+ */
+export async function deleteTransaction(userId: string, id: string): Promise<void> {
+  const { error } = await supabase
+    .from('transactions')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', userId)
+  if (error) throw error
+}
+
+/**
  * Загрузить полную историю транзакций (для UI "показать больше").
  */
 export async function loadTransactions(

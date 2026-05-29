@@ -263,6 +263,73 @@ export function applyDeposit(
   return { state: newState, tx }
 }
 
+/**
+ * Можно ли вручную править/удалять транзакцию.
+ * Только ручные операции (расход/пополнение) — они затрагивают лишь баланс.
+ * earn/save/withdraw/долговые завязаны на задания/цели/долги и правятся через них.
+ */
+export function isTransactionEditable(type: TxType): boolean {
+  return type === 'spend' || type === 'deposit'
+}
+
+/**
+ * Удалить ручную транзакцию и откатить её влияние на баланс.
+ */
+export function applyDeleteTransaction(state: AppState, tx: Transaction): AppState {
+  if (!isTransactionEditable(tx.type)) {
+    throw new FinanceError('NOT_EDITABLE', 'Эту операцию нельзя удалить вручную')
+  }
+  const balance = tx.type === 'spend' ? state.balance + tx.amount : state.balance - tx.amount
+  return {
+    ...state,
+    balance,
+    transactions: state.transactions.filter((t) => t.id !== tx.id),
+  }
+}
+
+/**
+ * Изменить сумму/название/категорию ручной транзакции, скорректировав баланс на разницу.
+ */
+export function applyEditTransaction(
+  state: AppState,
+  tx: Transaction,
+  patch: { amount?: number; label?: string; category?: string | null },
+): ApplyResult {
+  if (!isTransactionEditable(tx.type)) {
+    throw new FinanceError('NOT_EDITABLE', 'Эту операцию нельзя изменить вручную')
+  }
+  const newAmount = patch.amount ?? tx.amount
+  validateAmount(newAmount)
+  const newLabel = patch.label !== undefined ? validateLabel(patch.label) : tx.label
+
+  let category = tx.category
+  if (tx.type === 'spend' && patch.category !== undefined) {
+    category =
+      patch.category && state.expenseCategories.some((c) => c.id === patch.category)
+        ? patch.category
+        : undefined
+  }
+
+  // spend: рост суммы уменьшает баланс; deposit: рост увеличивает
+  const balanceDelta = tx.type === 'spend' ? tx.amount - newAmount : newAmount - tx.amount
+
+  const updated: Transaction = {
+    ...tx,
+    amount: newAmount,
+    label: newLabel,
+    category,
+  }
+
+  return {
+    state: {
+      ...state,
+      balance: state.balance + balanceDelta,
+      transactions: state.transactions.map((t) => (t.id === tx.id ? updated : t)),
+    },
+    tx: updated,
+  }
+}
+
 // ============= Жизненный цикл сущностей =============
 
 export type DeleteGoalMode = 'return_to_wallet' | 'discard'

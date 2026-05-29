@@ -14,6 +14,8 @@ import {
   loadState,
   createDebouncedSaver,
   appendTransaction,
+  updateTransaction as updateTxInCloud,
+  deleteTransaction as deleteTxInCloud,
   resetState as resetStateInCloud,
   ConflictError,
 } from '../storage/storage'
@@ -29,6 +31,8 @@ import {
   applyWithdraw,
   applySpend,
   applyDeposit,
+  applyEditTransaction,
+  applyDeleteTransaction,
   applyDeleteGoal,
   applyDeleteTask,
   applyEditGoal,
@@ -80,6 +84,8 @@ export interface AppStateApi {
   withdraw: (goalId: string, amount: number) => void
   spend: (amount: number, label: string, category?: string) => void
   deposit: (amount: number, label?: string) => void
+  editTransaction: (tx: Transaction, patch: { amount?: number; label?: string; category?: string | null }) => void
+  deleteTransaction: (tx: Transaction) => void
   // Жизненный цикл
   addTask: (input: { title: string; emoji: string; reward: number; xpReward: number }) => void
   editTask: (taskId: string, patch: { title?: string; emoji?: string; reward?: number; xpReward?: number }) => void
@@ -332,6 +338,27 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         safe(() => {
           const r = applyDeposit(requireState(), amount, new Date(), label)
           commitWithTx(r.state, r.tx)
+        })
+      },
+      editTransaction: (tx, patch) => {
+        safe(() => {
+          const r = applyEditTransaction(requireState(), tx, patch)
+          commit(r.state)
+          if (userId) {
+            updateTxInCloud(userId, r.tx.id, {
+              amount: r.tx.amount,
+              label: r.tx.label,
+              category: r.tx.category ?? null,
+            }).catch((e) => console.error('Update transaction failed', e))
+          }
+        })
+      },
+      deleteTransaction: (tx) => {
+        safe(() => {
+          commit(applyDeleteTransaction(requireState(), tx))
+          if (userId) {
+            deleteTxInCloud(userId, tx.id).catch((e) => console.error('Delete transaction failed', e))
+          }
         })
       },
       addTask: (input) => {

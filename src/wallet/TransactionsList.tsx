@@ -2,6 +2,10 @@ import { useMemo, useState } from 'react'
 import { Loader2, History } from 'lucide-react'
 import type { Transaction, Currency, AppState } from '../types'
 import { TransactionRow } from './TransactionRow'
+import { EditTransactionDialog } from './EditTransactionDialog'
+import { Modal } from '../components/Modal'
+import { useAppState } from '../state/AppStateContext'
+import { isTransactionEditable } from '../finance/finance'
 import { loadTransactions } from '../storage/storage'
 import { getCurrentDay } from '../lib/dates'
 
@@ -14,10 +18,30 @@ interface TransactionsListProps {
 const PAGE_SIZE = 50
 
 export function TransactionsList({ state, userId, currency }: TransactionsListProps) {
+  const { editTransaction, deleteTransaction } = useAppState()
   const [extra, setExtra] = useState<Transaction[]>([])
   const [loading, setLoading] = useState(false)
   const [hasMore, setHasMore] = useState(true)
   const [err, setErr] = useState<string | null>(null)
+  const [editing, setEditing] = useState<Transaction | null>(null)
+
+  // Править/удалять можно только ручные операции (расход/пополнение), которые есть
+  // в свежем срезе state (инлайн) — для них корректно откатывается баланс.
+  const inlineIds = useMemo(() => new Set(state.transactions.map((t) => t.id)), [state.transactions])
+
+  const handleEditSubmit = (patch: { amount: number; label: string; category: string | null }) => {
+    if (!editing) return
+    editTransaction(editing, patch)
+    setExtra((prev) => prev.map((t) => (t.id === editing.id ? { ...t, ...patch, category: patch.category ?? undefined } : t)))
+    setEditing(null)
+  }
+
+  const handleDelete = () => {
+    if (!editing) return
+    deleteTransaction(editing)
+    setExtra((prev) => prev.filter((t) => t.id !== editing.id))
+    setEditing(null)
+  }
 
   const all = useMemo(() => {
     const seen = new Set<string>()
@@ -65,7 +89,16 @@ export function TransactionsList({ state, userId, currency }: TransactionsListPr
           </div>
           <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-1">
             {txs.map((tx) => (
-              <TransactionRow key={tx.id} tx={tx} currency={currency} />
+              <TransactionRow
+                key={tx.id}
+                tx={tx}
+                currency={currency}
+                onEdit={
+                  isTransactionEditable(tx.type) && inlineIds.has(tx.id)
+                    ? () => setEditing(tx)
+                    : undefined
+                }
+              />
             ))}
           </div>
         </div>
@@ -90,6 +123,18 @@ export function TransactionsList({ state, userId, currency }: TransactionsListPr
       {!hasMore && all.length > 0 && (
         <div className="text-center text-xs text-white/30 pt-2">— это всё —</div>
       )}
+
+      <Modal open={editing !== null} onClose={() => setEditing(null)} title="Изменить операцию">
+        {editing && (
+          <EditTransactionDialog
+            tx={editing}
+            currency={currency}
+            categories={state.expenseCategories}
+            onSubmit={handleEditSubmit}
+            onDelete={handleDelete}
+          />
+        )}
+      </Modal>
     </div>
   )
 }
