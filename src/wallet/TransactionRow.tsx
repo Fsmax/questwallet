@@ -1,4 +1,11 @@
-import { TrendingUp, TrendingDown, ArrowDownToLine, ArrowUpFromLine } from 'lucide-react'
+import {
+  TrendingUp,
+  TrendingDown,
+  ArrowDownToLine,
+  ArrowUpFromLine,
+  HandCoins,
+  Landmark,
+} from 'lucide-react'
 import type { Transaction, Currency, TxType } from '../types'
 import { formatMoney } from '../lib/format'
 
@@ -12,6 +19,11 @@ const META: Record<TxType, { Icon: typeof TrendingUp; color: string; bg: string;
   spend: { Icon: TrendingDown, color: 'text-[var(--color-coral)]', bg: 'bg-[var(--color-coral)]/15', sign: '-' },
   save: { Icon: ArrowDownToLine, color: 'text-[var(--color-gold)]', bg: 'bg-[var(--color-gold)]/15', sign: '→' },
   withdraw: { Icon: ArrowUpFromLine, color: 'text-white/70', bg: 'bg-white/10', sign: '←' },
+  // Долги: дал/отдал — минус (coral), вернули/взял — плюс (emerald)
+  lend: { Icon: HandCoins, color: 'text-[var(--color-coral)]', bg: 'bg-[var(--color-coral)]/15', sign: '-' },
+  collect: { Icon: HandCoins, color: 'text-[var(--color-emerald-quest)]', bg: 'bg-[var(--color-emerald-quest)]/15', sign: '+' },
+  borrow: { Icon: Landmark, color: 'text-[var(--color-emerald-quest)]', bg: 'bg-[var(--color-emerald-quest)]/15', sign: '+' },
+  settle: { Icon: Landmark, color: 'text-[var(--color-coral)]', bg: 'bg-[var(--color-coral)]/15', sign: '-' },
 }
 
 export function TransactionRow({ tx, currency }: TransactionRowProps) {

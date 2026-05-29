@@ -1,6 +1,6 @@
 # QuestWallet
 
-Веб-приложение для личного роста и накоплений в формате RPG-игры. Выполняй квесты — получай деньги и опыт. Копи на цели. Прокачивай навыки.
+Веб-приложение для личного роста и накоплений в формате RPG-игры. Выполняй квесты — получай деньги и опыт. Копи на цели. Прокачивай навыки. Веди расходы по категориям и регулярные платежи, отслеживай долги (кто должен тебе и кому должен ты) — всё связано с балансом кошелька.
 
 ## Стек
 
@@ -28,8 +28,8 @@ npm run build    # production build
 - `src/finance/` — чистые финансовые функции + игровые механики (XP, streak)
 - `src/storage/` — слой работы с Supabase + localStorage-кэш + конфликты версий
 - `src/state/` — React Context для управления состоянием
-- `src/screens/` — экраны вкладок (Dashboard, Quests, Skills, Goals, Wallet, Settings)
-- `src/dashboard/`, `src/quests/`, `src/skills/`, `src/goals/`, `src/wallet/`, `src/settings/` — компоненты по фичам
+- `src/screens/` — экраны вкладок (Dashboard, Quests, Skills, Goals, Wallet, Debts, Settings)
+- `src/dashboard/`, `src/quests/`, `src/skills/`, `src/goals/`, `src/wallet/`, `src/debts/`, `src/settings/` — компоненты по фичам
 - `src/components/` — общие UI-компоненты (Modal)
 - `src/lib/` — утилиты (даты, форматирование, seed-данные)
 

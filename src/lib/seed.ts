@@ -1,6 +1,26 @@
-import type { AppState, Task, Goal, Skill, SkillTask } from '../types'
+import type { AppState, Task, Goal, Skill, SkillTask, ExpenseCategory } from '../types'
 import { CURRENT_SCHEMA_VERSION } from '../types'
 import { detectTimezone, getCurrentDay } from './dates'
+
+export const SEED_CATEGORIES: Omit<ExpenseCategory, 'id' | 'order'>[] = [
+  { title: 'Еда', emoji: '🍔' },
+  { title: 'Продукты', emoji: '🛒' },
+  { title: 'Транспорт', emoji: '🚕' },
+  { title: 'Дом', emoji: '🏠' },
+  { title: 'Здоровье', emoji: '💊' },
+  { title: 'Развлечения', emoji: '🎬' },
+  { title: 'Покупки', emoji: '🛍️' },
+  { title: 'Связь', emoji: '📱' },
+  { title: 'Другое', emoji: '📦' },
+]
+
+export function seedCategories(): ExpenseCategory[] {
+  return SEED_CATEGORIES.map((c, idx) => ({
+    ...c,
+    id: crypto.randomUUID(),
+    order: idx,
+  }))
+}
 
 export const SEED_TASKS: Omit<Task, 'id' | 'doneToday'>[] = [
   { title: 'Утренняя зарядка', emoji: '💪', reward: 200, xpReward: 10 },
@@ -127,5 +147,8 @@ export function createInitialState(now: Date = new Date()): AppState {
     skillTasks,
     goals,
     transactions: [],
+    expenseCategories: seedCategories(),
+    recurringExpenses: [],
+    debts: [],
   }
 }

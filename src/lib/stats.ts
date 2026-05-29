@@ -1,4 +1,4 @@
-import type { Transaction } from '../types'
+import type { Transaction, ExpenseCategory } from '../types'
 import { getCurrentDay } from './dates'
 
 export interface DayBucket {
@@ -77,4 +77,55 @@ export function summarize(transactions: Transaction[]): StatsSummary {
 function dayLabel(day: string): string {
   const [, m, d] = day.split('-')
   return `${d}.${m}`
+}
+
+export interface CategorySlice {
+  id: string // id категории или '__none__'
+  title: string
+  emoji: string
+  total: number
+  count: number
+  share: number // доля от всех трат (0..1)
+}
+
+const NONE_ID = '__none__'
+
+/**
+ * Разбивка трат (type === 'spend') по категориям, по убыванию суммы.
+ * Транзакции без категории или со ссылкой на удалённую категорию идут в «Без категории».
+ * sinceTimestamp — необязательный фильтр «с какого момента» (например, начало месяца).
+ */
+export function categoryBreakdown(
+  transactions: Transaction[],
+  categories: ExpenseCategory[],
+  sinceTimestamp = 0,
+): CategorySlice[] {
+  const byId = new Map(categories.map((c) => [c.id, c]))
+  const totals = new Map<string, { total: number; count: number }>()
+  let grand = 0
+
+  for (const tx of transactions) {
+    if (tx.type !== 'spend') continue
+    if (tx.timestamp < sinceTimestamp) continue
+    const key = tx.category && byId.has(tx.category) ? tx.category : NONE_ID
+    const cur = totals.get(key) ?? { total: 0, count: 0 }
+    cur.total += tx.amount
+    cur.count += 1
+    totals.set(key, cur)
+    grand += tx.amount
+  }
+
+  const slices: CategorySlice[] = []
+  for (const [key, { total, count }] of totals) {
+    const cat = byId.get(key)
+    slices.push({
+      id: key,
+      title: cat?.title ?? 'Без категории',
+      emoji: cat?.emoji ?? '❔',
+      total,
+      count,
+      share: grand > 0 ? total / grand : 0,
+    })
+  }
+  return slices.sort((a, b) => b.total - a.total)
 }

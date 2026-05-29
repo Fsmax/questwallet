@@ -1,19 +1,27 @@
 import { useState } from 'react'
-import type { Currency } from '../types'
+import type { Currency, ExpenseCategory } from '../types'
 import { formatMoney } from '../lib/format'
-
-const QUICK_LABELS = ['☕ Кофе', '🍔 Еда', '🚕 Такси', '🛒 Продукты', '💊 Аптека', '🎬 Развлечения']
 
 interface SpendDialogProps {
   balance: number
   currency: Currency
-  onSubmit: (amount: number, label: string) => void
+  categories: ExpenseCategory[]
+  onSubmit: (amount: number, label: string, category?: string) => void
 }
 
-export function SpendDialog({ balance, currency, onSubmit }: SpendDialogProps) {
+export function SpendDialog({ balance, currency, categories, onSubmit }: SpendDialogProps) {
   const [amount, setAmount] = useState('')
   const [label, setLabel] = useState('')
+  const [categoryId, setCategoryId] = useState<string | null>(null)
   const [err, setErr] = useState<string | null>(null)
+
+  const sorted = [...categories].sort((a, b) => a.order - b.order)
+
+  const pickCategory = (c: ExpenseCategory) => {
+    setCategoryId((prev) => (prev === c.id ? null : c.id))
+    // Если название пустое — подставим название категории как подсказку
+    if (!label.trim()) setLabel(c.title)
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -24,7 +32,7 @@ export function SpendDialog({ balance, currency, onSubmit }: SpendDialogProps) {
     if (n > balance) return setErr(`В кошельке: ${formatMoney(balance, currency)}`)
     if (!trimmed) return setErr('Введи название (на что потратил)')
     if (trimmed.length > 80) return setErr('Название слишком длинное')
-    onSubmit(n, trimmed)
+    onSubmit(n, trimmed, categoryId ?? undefined)
   }
 
   return (
@@ -48,6 +56,28 @@ export function SpendDialog({ balance, currency, onSubmit }: SpendDialogProps) {
         />
       </label>
 
+      {sorted.length > 0 && (
+        <div>
+          <span className="text-sm text-white/70 font-semibold mb-1.5 block">Категория</span>
+          <div className="flex flex-wrap gap-1.5">
+            {sorted.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => pickCategory(c)}
+                className={`text-xs px-2.5 py-1.5 rounded-full border transition ${
+                  categoryId === c.id
+                    ? 'bg-[var(--color-coral)]/20 border-[var(--color-coral)]/60 text-white'
+                    : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:text-white'
+                }`}
+              >
+                {c.emoji} {c.title}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <label className="block">
         <span className="text-sm text-white/70 font-semibold mb-1.5 block">На что</span>
         <input
@@ -58,18 +88,6 @@ export function SpendDialog({ balance, currency, onSubmit }: SpendDialogProps) {
           className="w-full bg-black/30 border border-white/10 rounded-xl px-3 py-3 text-white placeholder:text-white/30 focus:border-[var(--color-coral)]/60 focus:outline-none transition"
           placeholder="Кофе"
         />
-        <div className="flex flex-wrap gap-1.5 mt-2">
-          {QUICK_LABELS.map((l) => (
-            <button
-              key={l}
-              type="button"
-              onClick={() => setLabel(l)}
-              className="text-xs px-2.5 py-1 rounded-full bg-white/5 border border-white/10 text-white/70 hover:bg-white/10 hover:text-white transition"
-            >
-              {l}
-            </button>
-          ))}
-        </div>
       </label>
 
       {err && (

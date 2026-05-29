@@ -14,7 +14,7 @@ export class FinanceError extends Error {
   }
 }
 
-function validateAmount(amount: number): void {
+export function validateAmount(amount: number): void {
   if (!Number.isFinite(amount) || amount <= 0) {
     throw new FinanceError('INVALID_AMOUNT', 'Сумма должна быть больше нуля')
   }
@@ -23,7 +23,7 @@ function validateAmount(amount: number): void {
   }
 }
 
-function validateLabel(label: string): string {
+export function validateLabel(label: string): string {
   const trimmed = label.trim()
   if (!trimmed) throw new FinanceError('EMPTY_LABEL', 'Название не может быть пустым')
   if (trimmed.length > MAX_LABEL_LEN) {
@@ -204,12 +204,16 @@ export function applySpend(
   amount: number,
   label: string,
   now: Date,
+  category?: string,
 ): ApplyResult {
   validateAmount(amount)
   if (amount > state.balance) {
     throw new FinanceError('INSUFFICIENT_BALANCE', 'Недостаточно денег в кошельке')
   }
   const trimmedLabel = validateLabel(label)
+  // Категорию принимаем только если она реально существует в state.
+  const validCategory =
+    category && state.expenseCategories.some((c) => c.id === category) ? category : undefined
 
   const tx: Transaction = {
     id: newTxId(),
@@ -217,6 +221,7 @@ export function applySpend(
     amount,
     label: trimmedLabel,
     timestamp: now.getTime(),
+    ...(validCategory ? { category: validCategory } : {}),
   }
 
   const newState: AppState = {

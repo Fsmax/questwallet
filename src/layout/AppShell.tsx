@@ -6,6 +6,7 @@ import {
   Rocket,
   Target,
   Wallet,
+  HandCoins,
   Settings as SettingsIcon,
   Sparkles,
   Loader2,
@@ -17,6 +18,7 @@ import { QuestsScreen } from '../screens/QuestsScreen'
 import { SkillsScreen } from '../screens/SkillsScreen'
 import { GoalsScreen } from '../screens/GoalsScreen'
 import { WalletScreen } from '../screens/WalletScreen'
+import { DebtsScreen } from '../screens/DebtsScreen'
 import { SettingsScreen } from '../screens/SettingsScreen'
 import { AppStateProvider, useAppState } from '../state/AppStateContext'
 import { calcLevel } from '../finance/game'
@@ -24,7 +26,7 @@ import { LevelUpToast } from '../game/LevelUpToast'
 import { AchievementToast } from '../achievements/AchievementToast'
 import { useReminders } from '../game/useReminders'
 
-export type Tab = 'home' | 'quests' | 'skills' | 'goals' | 'wallet' | 'settings'
+export type Tab = 'home' | 'quests' | 'skills' | 'goals' | 'wallet' | 'debts' | 'settings'
 
 const MAIN_TABS: { id: Tab; label: string; Icon: typeof Home }[] = [
   { id: 'home', label: 'Главная', Icon: Home },
@@ -32,6 +34,7 @@ const MAIN_TABS: { id: Tab; label: string; Icon: typeof Home }[] = [
   { id: 'skills', label: 'Навыки', Icon: Rocket },
   { id: 'goals', label: 'Цели', Icon: Target },
   { id: 'wallet', label: 'Кошелёк', Icon: Wallet },
+  { id: 'debts', label: 'Долги', Icon: HandCoins },
 ]
 
 export function AppShell() {
@@ -141,6 +144,7 @@ function ShellInner() {
                 {tab === 'skills' && <SkillsScreen />}
                 {tab === 'goals' && <GoalsScreen />}
                 {tab === 'wallet' && <WalletScreen />}
+                {tab === 'debts' && <DebtsScreen />}
                 {tab === 'settings' && <SettingsScreen />}
               </motion.div>
             </AnimatePresence>

@@ -31,6 +31,9 @@ function rawState(over: Record<string, unknown> = {}): AppState {
     skillTasks: [],
     goals: [],
     transactions: [],
+    expenseCategories: [{ id: 'c1', title: 'Еда', emoji: '🍔', order: 0 }],
+    recurringExpenses: [],
+    debts: [],
     ...over,
   } as AppState
 }

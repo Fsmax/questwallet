@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Loader2, TrendingUp, TrendingDown, PiggyBank } from 'lucide-react'
 import type { AppState, Currency, Transaction } from '../types'
-import { aggregateByDay, summarize } from '../lib/stats'
+import { aggregateByDay, summarize, categoryBreakdown } from '../lib/stats'
 import { formatMoneyShort, formatMoney } from '../lib/format'
 import { loadTransactions } from '../storage/storage'
 
@@ -44,6 +44,10 @@ export function StatsView({ state, userId, currency }: StatsViewProps) {
     [txs, state.timezone, state.dayResetHour],
   )
   const summary = useMemo(() => (txs ? summarize(txs) : null), [txs])
+  const categories = useMemo(
+    () => (txs ? categoryBreakdown(txs, state.expenseCategories) : []),
+    [txs, state.expenseCategories],
+  )
 
   if (!txs || !summary) {
     return (
@@ -129,6 +133,34 @@ export function StatsView({ state, userId, currency }: StatsViewProps) {
           </span>
         </div>
       </div>
+
+      {/* Расходы по категориям */}
+      {categories.length > 0 && (
+        <div className="rounded-2xl p-4 bg-white/5 border border-white/10">
+          <h3 className="text-sm font-bold text-white mb-3">Куда уходят деньги</h3>
+          <div className="space-y-2.5">
+            {categories.map((c) => (
+              <div key={c.id}>
+                <div className="flex items-center justify-between text-sm mb-1">
+                  <span className="text-white/80 truncate">
+                    {c.emoji} {c.title}
+                    <span className="text-white/30 ml-1.5 text-xs tabular-nums">{c.count}</span>
+                  </span>
+                  <span className="text-white font-bold tabular-nums ml-2">
+                    {formatMoneyShort(c.total, currency)}
+                  </span>
+                </div>
+                <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-[var(--color-coral)]"
+                    style={{ width: `${Math.max(2, c.share * 100)}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

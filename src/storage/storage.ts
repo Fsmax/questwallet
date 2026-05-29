@@ -184,6 +184,7 @@ export async function appendTransaction(
     type: tx.type,
     amount: tx.amount,
     label: tx.label,
+    category: tx.category ?? null,
   })
 
   if (error && error.code !== '23505') {
@@ -201,7 +202,7 @@ export async function loadTransactions(
 ): Promise<Transaction[]> {
   const { data, error } = await supabase
     .from('transactions')
-    .select('id, type, amount, label, created_at')
+    .select('id, type, amount, label, category, created_at')
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1)
@@ -214,6 +215,7 @@ export async function loadTransactions(
     amount: Number(row.amount),
     label: row.label as string,
     timestamp: new Date(row.created_at as string).getTime(),
+    ...(row.category ? { category: row.category as string } : {}),
   }))
 }
 

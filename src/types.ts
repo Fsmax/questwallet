@@ -1,6 +1,17 @@
-export type TxType = 'earn' | 'spend' | 'save' | 'withdraw'
+export type TxType =
+  | 'earn'
+  | 'spend'
+  | 'save'
+  | 'withdraw'
+  | 'lend' // дал в долг (баланс −)
+  | 'collect' // мне вернули долг (баланс +)
+  | 'borrow' // взял в долг (баланс +)
+  | 'settle' // отдал свой долг (баланс −)
 
 export type Currency = 'сум' | 'USD'
+
+/** Направление долга: кто кому должен. */
+export type DebtDirection = 'owed_to_me' | 'i_owe'
 
 export interface Task {
   id: string
@@ -47,6 +58,43 @@ export interface Transaction {
   amount: number
   label: string
   timestamp: number
+  category?: string // id категории расхода (только для type === 'spend')
+}
+
+/** Категория расходов (Еда, Транспорт…). */
+export interface ExpenseCategory {
+  id: string
+  title: string
+  emoji: string
+  order: number
+}
+
+/** Регулярный (повторяющийся) расход: подписки, аренда, кредит. */
+export interface RecurringExpense {
+  id: string
+  title: string
+  emoji: string
+  amount: number
+  dayOfMonth: number // 1..28 — день месяца списания
+  category: string | null // id категории
+  order: number
+  createdAt: number
+  lastChargedMonth: string | null // "YYYY-MM" — последний месяц, за который списано
+}
+
+/** Долг: либо мне должны (owed_to_me), либо должен я (i_owe). */
+export interface Debt {
+  id: string
+  direction: DebtDirection
+  person: string // имя контрагента
+  emoji: string
+  principal: number // изначальная сумма долга
+  paid: number // сколько уже погашено (возвращено мне / отдано мной)
+  note: string
+  dueDate: string | null // "YYYY-MM-DD" или null
+  order: number
+  createdAt: number
+  settledAt: number | null // когда долг закрыт полностью
 }
 
 export interface NotifyState {
@@ -84,7 +132,10 @@ export interface AppState {
   skillTasks: SkillTask[]
   goals: Goal[]
   transactions: Transaction[]
+  expenseCategories: ExpenseCategory[]
+  recurringExpenses: RecurringExpense[]
+  debts: Debt[]
 }
 
-export const CURRENT_SCHEMA_VERSION = 1
+export const CURRENT_SCHEMA_VERSION = 2
 export const MAX_TRANSACTIONS_IN_STATE = 200

@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import type { AppState, Currency, RemindersConfig, Transaction } from '../types'
+import type { AppState, Currency, DebtDirection, RemindersConfig, Transaction } from '../types'
 import { useAuth } from '../auth/useAuth'
 import {
   loadState,
@@ -45,6 +45,21 @@ import {
   FinanceError,
   type DeleteGoalMode,
 } from '../finance/finance'
+import {
+  applyAddCategory,
+  applyEditCategory,
+  applyDeleteCategory,
+  applyAddRecurring,
+  applyEditRecurring,
+  applyDeleteRecurring,
+  applyChargeRecurring,
+} from '../finance/expenses'
+import {
+  applyAddDebt,
+  applyRepayDebt,
+  applyEditDebt,
+  applyDeleteDebt,
+} from '../finance/debts'
 
 export type AppStatus = 'loading' | 'ready' | 'error'
 
@@ -61,7 +76,7 @@ export interface AppStateApi {
   cancel: (taskId: string) => void
   save: (goalId: string, amount: number) => void
   withdraw: (goalId: string, amount: number) => void
-  spend: (amount: number, label: string) => void
+  spend: (amount: number, label: string, category?: string) => void
   // Жизненный цикл
   addTask: (input: { title: string; emoji: string; reward: number; xpReward: number }) => void
   editTask: (taskId: string, patch: { title?: string; emoji?: string; reward?: number; xpReward?: number }) => void
@@ -84,6 +99,20 @@ export interface AppStateApi {
   editSkillTask: (taskId: string, patch: { title?: string; emoji?: string; reward?: number; xpReward?: number }) => void
   deleteSkillTask: (taskId: string) => void
   loadSeedSkills: () => void
+  // Категории расходов
+  addCategory: (input: { title: string; emoji: string }) => void
+  editCategory: (id: string, patch: { title?: string; emoji?: string; order?: number }) => void
+  deleteCategory: (id: string) => void
+  // Регулярные расходы
+  addRecurring: (input: { title: string; emoji: string; amount: number; dayOfMonth: number; category: string | null }) => void
+  editRecurring: (id: string, patch: { title?: string; emoji?: string; amount?: number; dayOfMonth?: number; category?: string | null; order?: number }) => void
+  deleteRecurring: (id: string) => void
+  chargeRecurring: (id: string) => void
+  // Долги
+  addDebt: (input: { direction: DebtDirection; person: string; emoji: string; principal: number; note: string; dueDate: string | null }) => void
+  repayDebt: (debtId: string, amount: number) => void
+  editDebt: (debtId: string, patch: { person?: string; emoji?: string; note?: string; dueDate?: string | null; principal?: number; order?: number }) => void
+  deleteDebt: (debtId: string) => void
   // Опасные операции
   replaceState: (incoming: AppState) => void
   factoryReset: () => Promise<void>
@@ -289,9 +318,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
           commitWithTx(r.state, r.tx)
         })
       },
-      spend: (amount, label) => {
+      spend: (amount, label, category) => {
         safe(() => {
-          const r = applySpend(requireState(), amount, label, new Date())
+          const r = applySpend(requireState(), amount, label, new Date(), category)
           commitWithTx(r.state, r.tx)
         })
       },
@@ -360,6 +389,51 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
           }
           commit(next)
         })
+      },
+
+      addCategory: (input) => {
+        safe(() => commit(applyAddCategory(requireState(), input)))
+      },
+      editCategory: (id, patch) => {
+        safe(() => commit(applyEditCategory(requireState(), id, patch)))
+      },
+      deleteCategory: (id) => {
+        safe(() => commit(applyDeleteCategory(requireState(), id)))
+      },
+
+      addRecurring: (input) => {
+        safe(() => commit(applyAddRecurring(requireState(), input, new Date())))
+      },
+      editRecurring: (id, patch) => {
+        safe(() => commit(applyEditRecurring(requireState(), id, patch)))
+      },
+      deleteRecurring: (id) => {
+        safe(() => commit(applyDeleteRecurring(requireState(), id)))
+      },
+      chargeRecurring: (id) => {
+        safe(() => {
+          const r = applyChargeRecurring(requireState(), id, new Date())
+          commitWithTx(r.state, r.tx)
+        })
+      },
+
+      addDebt: (input) => {
+        safe(() => {
+          const r = applyAddDebt(requireState(), input, new Date())
+          commitWithTx(r.state, r.tx)
+        })
+      },
+      repayDebt: (debtId, amount) => {
+        safe(() => {
+          const r = applyRepayDebt(requireState(), debtId, amount, new Date())
+          commitWithTx(r.state, r.tx)
+        })
+      },
+      editDebt: (debtId, patch) => {
+        safe(() => commit(applyEditDebt(requireState(), debtId, patch, new Date())))
+      },
+      deleteDebt: (debtId) => {
+        safe(() => commit(applyDeleteDebt(requireState(), debtId)))
       },
 
       setCurrency: (currency) => {

@@ -1,4 +1,5 @@
 import type { AppState, RemindersConfig } from '../types'
+import { seedCategories } from '../lib/seed'
 
 const DEFAULT_REMINDERS: RemindersConfig = {
   enabled: false,
@@ -68,6 +69,20 @@ export function ensureDefaults(state: AppState): AppState {
   }
   if (!Array.isArray(next.unlockedAchievements)) {
     next = { ...next, unlockedAchievements: [] }
+    changed = true
+  }
+
+  // Расходы по категориям (схема v2): старым пользователям подкладываем дефолтные категории.
+  if (!Array.isArray(next.expenseCategories) || next.expenseCategories.length === 0) {
+    next = { ...next, expenseCategories: seedCategories() }
+    changed = true
+  }
+  if (!Array.isArray(next.recurringExpenses)) {
+    next = { ...next, recurringExpenses: [] }
+    changed = true
+  }
+  if (!Array.isArray(next.debts)) {
+    next = { ...next, debts: [] }
     changed = true
   }
 

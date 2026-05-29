@@ -8,6 +8,7 @@ import { Modal } from '../components/Modal'
 import { SpendDialog } from '../wallet/SpendDialog'
 import { TransactionsList } from '../wallet/TransactionsList'
 import { StatsView } from '../wallet/StatsView'
+import { DueRecurringCard } from '../wallet/DueRecurringCard'
 
 type WalletTab = 'history' | 'stats'
 
@@ -19,8 +20,8 @@ export function WalletScreen() {
 
   if (!state || !auth.user) return null
 
-  const handleSpend = (amount: number, label: string) => {
-    spend(amount, label)
+  const handleSpend = (amount: number, label: string, category?: string) => {
+    spend(amount, label, category)
     setSpendOpen(false)
   }
 
@@ -33,6 +34,10 @@ export function WalletScreen() {
     >
       <motion.div variants={{ hidden: { opacity: 0, y: 8 }, visible: { opacity: 1, y: 0 } }}>
         <BalanceCard balance={state.balance} currency={state.currency} />
+      </motion.div>
+
+      <motion.div variants={{ hidden: { opacity: 0, y: 8 }, visible: { opacity: 1, y: 0 } }}>
+        <DueRecurringCard />
       </motion.div>
 
       <motion.div variants={{ hidden: { opacity: 0, y: 8 }, visible: { opacity: 1, y: 0 } }}>
@@ -67,7 +72,12 @@ export function WalletScreen() {
       </motion.div>
 
       <Modal open={spendOpen} onClose={() => setSpendOpen(false)} title="Расход">
-        <SpendDialog balance={state.balance} currency={state.currency} onSubmit={handleSpend} />
+        <SpendDialog
+          balance={state.balance}
+          currency={state.currency}
+          categories={state.expenseCategories}
+          onSubmit={handleSpend}
+        />
       </Modal>
     </motion.div>
   )
