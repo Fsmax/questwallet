@@ -1,10 +1,5 @@
 import { LogOut } from 'lucide-react'
 import { useAuth } from '../auth/useAuth'
-import { CurrencySwitch } from '../settings/CurrencySwitch'
-import { DayResetSelect } from '../settings/DayResetSelect'
-import { CategoriesSection } from '../settings/CategoriesSection'
-import { RecurringSection } from '../settings/RecurringSection'
-import { RemindersSection } from '../settings/RemindersSection'
 import { FeedbackSection } from '../settings/FeedbackSection'
 import { ExportImportSection } from '../settings/ExportImportSection'
 import { DangerSection } from '../settings/DangerSection'
@@ -31,11 +26,6 @@ export function SettingsScreen() {
         </SettingsRow>
       </SettingsCard>
 
-      <CurrencySwitch />
-      <DayResetSelect />
-      <CategoriesSection />
-      <RecurringSection />
-      <RemindersSection />
       <FeedbackSection />
       <ExportImportSection />
       <DangerSection />

@@ -9,6 +9,8 @@ import { WelcomeCard } from '../dashboard/WelcomeCard'
 import { DayTaskRow } from '../myday/DayTaskRow'
 import { DayTaskForm, type DayTaskFormValues } from '../myday/DayTaskForm'
 import { WorkTaskRow } from '../work/WorkTaskRow'
+import { DayResetSelect } from '../settings/DayResetSelect'
+import { RemindersSection } from '../settings/RemindersSection'
 import { Modal } from '../components/Modal'
 import { visibleStreak } from '../finance/game'
 import type { DayTask } from '../types'
@@ -183,6 +185,12 @@ export function MyDayScreen() {
           )}
         </>
       )}
+
+      {/* Настройки дня: граница логического дня и напоминания о распорядке */}
+      <div className="pt-2 space-y-4">
+        <DayResetSelect />
+        <RemindersSection />
+      </div>
 
       <Modal
         open={editing !== null}

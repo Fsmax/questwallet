@@ -6,9 +6,10 @@ import { SegmentedTabs } from '../components/SegmentedTabs'
 import { WalletScreen } from './WalletScreen'
 import { GoalsScreen } from './GoalsScreen'
 import { DebtsScreen } from './DebtsScreen'
+import { BudgetScreen } from './BudgetScreen'
 import { debtTotals } from '../finance/debts'
 
-type FinanceTab = 'wallet' | 'goals' | 'debts'
+type FinanceTab = 'wallet' | 'goals' | 'debts' | 'budget'
 
 export function FinanceScreen() {
   const { state } = useAppState()
@@ -27,21 +28,26 @@ export function FinanceScreen() {
 
   return (
     <div className="space-y-4">
-      {/* Обзор: чистый капитал + ближайшая цель (кроме вкладки «Цели») */}
-      <NetWorthCard
-        balance={state.balance}
-        goalsSaved={goalsSaved}
-        owedToMe={totals.owedToMe}
-        iOwe={totals.iOwe}
-        currency={state.currency}
-      />
-      {tab !== 'goals' && <NearestGoalCard goal={nearest} currency={state.currency} />}
+      {/* Обзор: чистый капитал + ближайшая цель (кроме «Цели» и «Бюджет») */}
+      {tab !== 'budget' && (
+        <NetWorthCard
+          balance={state.balance}
+          goalsSaved={goalsSaved}
+          owedToMe={totals.owedToMe}
+          iOwe={totals.iOwe}
+          currency={state.currency}
+        />
+      )}
+      {tab !== 'goals' && tab !== 'budget' && (
+        <NearestGoalCard goal={nearest} currency={state.currency} />
+      )}
 
       <SegmentedTabs
         tabs={[
           { id: 'wallet', label: 'Кошелёк' },
           { id: 'goals', label: 'Цели' },
           { id: 'debts', label: 'Долги' },
+          { id: 'budget', label: 'Бюджет' },
         ]}
         active={tab}
         onChange={setTab}
@@ -50,6 +56,7 @@ export function FinanceScreen() {
       {tab === 'wallet' && <WalletScreen />}
       {tab === 'goals' && <GoalsScreen />}
       {tab === 'debts' && <DebtsScreen />}
+      {tab === 'budget' && <BudgetScreen />}
     </div>
   )
 }
