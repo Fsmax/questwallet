@@ -1,6 +1,6 @@
 import type { AppState, Transaction, TxType, Goal, Task, Skill, SkillTask } from '../types'
 import { MAX_TRANSACTIONS_IN_STATE } from '../types'
-import { tickStreak, hasOtherActivityToday } from './game'
+import { tickStreak, rollbackStreakOnCancel } from './game'
 
 const MAX_AMOUNT = 1_000_000_000
 const MAX_LABEL_LEN = 80
@@ -77,26 +77,14 @@ export function applyCancel(state: AppState, taskId: string): { state: AppState 
   if (!task) throw new FinanceError('NOT_FOUND', 'Задание не найдено')
   if (!task.doneToday) throw new FinanceError('NOT_DONE', 'Задание не было выполнено')
 
-  // Откат streak: только если за сегодня больше нет выполненной активности (квест/навык/дело дня)
-  const shouldRollbackStreak =
-    state.streakIncrementedToday && !hasOtherActivityToday(state, taskId)
-
-  let streak = state.streak
-  let lastActiveDate = state.lastActiveDate
-  let streakIncrementedToday = state.streakIncrementedToday
-  if (shouldRollbackStreak) {
-    streak = Math.max(0, state.streak - 1)
-    // lastActiveDate откатываем к пустой строке: пользователь сегодня ничего не сделал
-    lastActiveDate = ''
-    streakIncrementedToday = false
-  }
+  const sf = rollbackStreakOnCancel(state, taskId)
 
   const newState: AppState = {
     ...state,
     xp: Math.max(0, state.xp - task.xpReward),
-    streak,
-    lastActiveDate,
-    streakIncrementedToday,
+    streak: sf.streak,
+    lastActiveDate: sf.lastActiveDate,
+    streakIncrementedToday: sf.streakIncrementedToday,
     tasks: state.tasks.map((t) => (t.id === taskId ? { ...t, doneToday: false } : t)),
   }
 
@@ -528,24 +516,14 @@ export function applyCancelSkillTask(state: AppState, taskId: string): { state: 
   if (!task) throw new FinanceError('NOT_FOUND', 'Задание не найдено')
   if (!task.doneToday) throw new FinanceError('NOT_DONE', 'Задание не было выполнено')
 
-  const shouldRollbackStreak =
-    state.streakIncrementedToday && !hasOtherActivityToday(state, taskId)
-
-  let streak = state.streak
-  let lastActiveDate = state.lastActiveDate
-  let streakIncrementedToday = state.streakIncrementedToday
-  if (shouldRollbackStreak) {
-    streak = Math.max(0, state.streak - 1)
-    lastActiveDate = ''
-    streakIncrementedToday = false
-  }
+  const sf = rollbackStreakOnCancel(state, taskId)
 
   const newState: AppState = {
     ...state,
     xp: Math.max(0, state.xp - task.xpReward),
-    streak,
-    lastActiveDate,
-    streakIncrementedToday,
+    streak: sf.streak,
+    lastActiveDate: sf.lastActiveDate,
+    streakIncrementedToday: sf.streakIncrementedToday,
     skillTasks: state.skillTasks.map((t) => (t.id === taskId ? { ...t, doneToday: false } : t)),
     skills: state.skills.map((s) =>
       s.id === task.skillId ? { ...s, xp: Math.max(0, s.xp - task.xpReward) } : s,

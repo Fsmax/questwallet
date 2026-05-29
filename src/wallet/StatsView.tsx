@@ -45,7 +45,10 @@ export function StatsView({ state, userId, currency }: StatsViewProps) {
     () => (txs ? aggregateByDay(txs, RANGE, state.timezone, state.dayResetHour, new Date()) : []),
     [txs, state.timezone, state.dayResetHour],
   )
-  const summary = useMemo(() => (txs ? summarize(txs) : null), [txs])
+  const summary = useMemo(
+    () => (txs ? summarize(txs, state.timezone, state.dayResetHour) : null),
+    [txs, state.timezone, state.dayResetHour],
+  )
   const monthStart = useMemo(
     () => monthStartTimestamp(getCurrentDay(new Date(), state.timezone, state.dayResetHour).slice(0, 7)),
     [state.timezone, state.dayResetHour],

@@ -64,7 +64,7 @@ describe('summarize', () => {
       tx({ type: 'save', amount: 400 }),
       tx({ type: 'withdraw', amount: 50 }),
     ]
-    const s = summarize(txs)
+    const s = summarize(txs, TZ, 4)
     expect(s.totalEarned).toBe(500)
     expect(s.totalSpent).toBe(100)
     expect(s.totalSaved).toBe(400)
@@ -75,13 +75,13 @@ describe('summarize', () => {
       tx({ type: 'deposit', amount: 200, timestamp: new Date('2026-05-27T10:00:00Z').getTime() }),
       tx({ type: 'deposit', amount: 400, timestamp: new Date('2026-05-28T10:00:00Z').getTime() }),
     ]
-    const s = summarize(txs)
+    const s = summarize(txs, TZ, 4)
     expect(s.activeDays).toBe(2)
     expect(s.avgEarnedPerActiveDay).toBe(300)
   })
 
   it('пустой список', () => {
-    const s = summarize([])
+    const s = summarize([], TZ, 4)
     expect(s.totalEarned).toBe(0)
     expect(s.avgEarnedPerActiveDay).toBe(0)
     expect(s.activeDays).toBe(0)

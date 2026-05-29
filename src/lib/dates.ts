@@ -35,3 +35,10 @@ export function isYesterday(prev: string, today: string): boolean {
   const diffDays = Math.round((todayDate.getTime() - prevDate.getTime()) / 86400_000)
   return diffDays === 1
 }
+
+/** Логический день, предшествующий заданному (YYYY-MM-DD → YYYY-MM-DD). */
+export function previousDay(day: string): string {
+  const d = new Date(`${day}T12:00:00Z`)
+  d.setUTCDate(d.getUTCDate() - 1)
+  return d.toISOString().slice(0, 10)
+}

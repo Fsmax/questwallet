@@ -47,7 +47,11 @@ export function aggregateByDay(
   return Array.from(buckets.values())
 }
 
-export function summarize(transactions: Transaction[]): StatsSummary {
+export function summarize(
+  transactions: Transaction[],
+  timezone: string,
+  resetHour: number,
+): StatsSummary {
   let totalEarned = 0
   let totalSpent = 0
   let totalSaved = 0
@@ -56,7 +60,9 @@ export function summarize(transactions: Transaction[]): StatsSummary {
   for (const tx of transactions) {
     if (tx.type === 'deposit') {
       totalEarned += tx.amount
-      earnDays.add(new Date(tx.timestamp).toISOString().slice(0, 10))
+      // Логический день пользователя (та же граница, что у aggregateByDay),
+      // а не UTC-дата — иначе activeDays «съезжает» на границе суток.
+      earnDays.add(getCurrentDay(new Date(tx.timestamp), timezone, resetHour))
     } else if (tx.type === 'spend') {
       totalSpent += tx.amount
     } else if (tx.type === 'save') {
