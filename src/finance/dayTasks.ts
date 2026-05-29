@@ -1,6 +1,6 @@
 import type { AppState, DayTask } from '../types'
 import { FinanceError, validateLabel } from './finance'
-import { tickStreak, hasOtherActivityToday } from './game'
+import { tickStreak, rollbackStreakOnCancel } from './game'
 
 function newId(): string {
   return crypto.randomUUID()
@@ -96,23 +96,13 @@ export function applyUncompleteDayTask(state: AppState, id: string): AppState {
   if (!task) throw new FinanceError('NOT_FOUND', 'Дело не найдено')
   if (!task.done) throw new FinanceError('NOT_DONE', 'Дело не было выполнено')
 
-  const shouldRollbackStreak =
-    state.streakIncrementedToday && !hasOtherActivityToday(state, id)
-
-  let streak = state.streak
-  let lastActiveDate = state.lastActiveDate
-  let streakIncrementedToday = state.streakIncrementedToday
-  if (shouldRollbackStreak) {
-    streak = Math.max(0, state.streak - 1)
-    lastActiveDate = ''
-    streakIncrementedToday = false
-  }
+  const sf = rollbackStreakOnCancel(state, id)
 
   return {
     ...state,
-    streak,
-    lastActiveDate,
-    streakIncrementedToday,
+    streak: sf.streak,
+    lastActiveDate: sf.lastActiveDate,
+    streakIncrementedToday: sf.streakIncrementedToday,
     dayTasks: state.dayTasks.map((t) => (t.id === id ? { ...t, done: false } : t)),
   }
 }

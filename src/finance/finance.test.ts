@@ -154,6 +154,18 @@ describe('applyCancel', () => {
     const s = makeState({ tasks: [makeTask({ doneToday: false })] })
     expect(() => applyCancel(s, 't1')).toThrow(FinanceError)
   })
+
+  it('отменил и снова выполнил единственный квест дня → серия восстановлена, не сброшена в 1', () => {
+    // Регрессия: раньше откат ставил lastActiveDate='' и терял связь со «вчера»,
+    // поэтому повторная отметка обнуляла накопленную серию до 1.
+    const s1 = makeState({ tasks: [makeTask()], streak: 5, lastActiveDate: '2026-05-27' })
+    const { state: s2 } = applyEarn(s1, 't1', NOW) // 5 → 6 (NOW = 2026-05-28)
+    expect(s2.streak).toBe(6)
+    const { state: s3 } = applyCancel(s2, 't1') // откат → 5
+    expect(s3.streak).toBe(5)
+    const { state: s4 } = applyEarn(s3, 't1', NOW) // снова → 6, а не 1
+    expect(s4.streak).toBe(6)
+  })
 })
 
 describe('applySave', () => {

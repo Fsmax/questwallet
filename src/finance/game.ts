@@ -1,5 +1,5 @@
 import type { AppState } from '../types'
-import { getCurrentDay, isYesterday } from '../lib/dates'
+import { getCurrentDay, isYesterday, previousDay } from '../lib/dates'
 
 const BASE_XP = 100
 const GROWTH = 1.25
@@ -84,4 +84,40 @@ export function hasOtherActivityToday(state: AppState, excludeId?: string): bool
     state.skillTasks.some((t) => t.id !== excludeId && t.doneToday) ||
     state.dayTasks.some((t) => t.id !== excludeId && t.done)
   )
+}
+
+export interface StreakFields {
+  streak: number
+  lastActiveDate: string
+  streakIncrementedToday: boolean
+}
+
+/**
+ * Поля серии после отмены активности (квест/навык/дело дня).
+ * Серию откатываем только если её подняли сегодня И за сегодня не осталось другой
+ * выполненной активности (excludeId исключается из проверки).
+ *
+ * Важно: при откате lastActiveDate возвращаем НА ВЧЕРА, а не в '', если серия осталась
+ * (>0). Здесь state.lastActiveDate == сегодня (его выставил tickStreak при инкременте),
+ * поэтому previousDay(today) = вчера. Иначе повторная отметка в тот же день не продолжила
+ * бы серию (isYesterday('') === false), а сбросила её в 1 — терялся накопленный прогресс.
+ */
+export function rollbackStreakOnCancel(state: AppState, excludeId: string): StreakFields {
+  const shouldRollback =
+    state.streakIncrementedToday && !hasOtherActivityToday(state, excludeId)
+
+  if (!shouldRollback) {
+    return {
+      streak: state.streak,
+      lastActiveDate: state.lastActiveDate,
+      streakIncrementedToday: state.streakIncrementedToday,
+    }
+  }
+
+  const streak = Math.max(0, state.streak - 1)
+  return {
+    streak,
+    lastActiveDate: streak > 0 ? previousDay(state.lastActiveDate) : '',
+    streakIncrementedToday: false,
+  }
 }
