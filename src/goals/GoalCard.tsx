@@ -46,7 +46,7 @@ export function GoalCard({ goal, currency, walletBalance, onSave, onWithdraw, on
             </div>
             <button
               onClick={onEdit}
-              className="p-1.5 -mr-1 rounded-lg text-white/40 hover:text-white/80 hover:bg-white/5 transition flex-shrink-0"
+              className="p-1.5 -mr-1 rounded-lg text-white/55 hover:text-white/80 hover:bg-white/5 transition flex-shrink-0"
               aria-label="Редактировать"
             >
               <Pencil size={16} />
@@ -77,7 +77,7 @@ export function GoalCard({ goal, currency, walletBalance, onSave, onWithdraw, on
       </div>
 
       {!done && (
-        <div className="mt-3 text-xs text-white/40 tabular-nums">
+        <div className="mt-3 text-xs text-white/55 tabular-nums">
           Осталось: <strong className="text-white/70">{formatMoney(Math.max(0, goal.target - goal.saved), currency)}</strong>
         </div>
       )}

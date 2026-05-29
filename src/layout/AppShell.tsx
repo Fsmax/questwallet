@@ -28,6 +28,7 @@ const SettingsScreen = lazy(() =>
   import('../screens/SettingsScreen').then((m) => ({ default: m.SettingsScreen })),
 )
 import { AppStateProvider, useAppState } from '../state/AppStateContext'
+import { ConfirmProvider } from '../components/ConfirmProvider'
 import { calcLevel } from '../finance/game'
 import { LevelUpToast } from '../game/LevelUpToast'
 import { AchievementToast } from '../achievements/AchievementToast'
@@ -49,7 +50,9 @@ const MAIN_TABS: { id: Tab; label: string; Icon: typeof Rocket }[] = [
 export function AppShell() {
   return (
     <AppStateProvider>
-      <ShellInner />
+      <ConfirmProvider>
+        <ShellInner />
+      </ConfirmProvider>
     </AppStateProvider>
   )
 }
@@ -345,8 +348,8 @@ function VersionCard({ title, state }: { title: string; state: AppState }) {
     <div className="bg-black/30 rounded-xl p-3 space-y-1">
       <div className="text-white/50 text-xs">{title}</div>
       <div className="text-white font-bold tabular-nums">{formatMoney(state.balance, state.currency)}</div>
-      <div className="text-white/40 text-xs">Квестов: {state.tasks.length} · Дел: {state.dayTasks.length}</div>
-      <div className="text-white/40 text-xs">Баллы: {state.xp} · Серия: {state.streak}</div>
+      <div className="text-white/55 text-xs">Квестов: {state.tasks.length} · Дел: {state.dayTasks.length}</div>
+      <div className="text-white/55 text-xs">Баллы: {state.xp} · Серия: {state.streak}</div>
     </div>
   )
 }

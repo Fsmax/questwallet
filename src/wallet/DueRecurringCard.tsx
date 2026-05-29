@@ -25,7 +25,7 @@ export function DueRecurringCard() {
               <span className="text-xl">{r.emoji}</span>
               <div className="flex-1 min-w-0">
                 <div className="text-white text-sm truncate">{r.title}</div>
-                <div className="text-xs text-white/40 tabular-nums">
+                <div className="text-xs text-white/55 tabular-nums">
                   {income ? '+' : '−'}
                   {formatMoney(r.amount, state.currency)} · {r.dayOfMonth}-го
                 </div>

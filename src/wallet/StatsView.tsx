@@ -75,7 +75,7 @@ export function StatsView({ state, userId, currency }: StatsViewProps) {
   return (
     <div className="space-y-4">
       {err && (
-        <div className="text-xs text-white/40 text-center">Показано по доступным данным</div>
+        <div className="text-xs text-white/55 text-center">Показано по доступным данным</div>
       )}
 
       {/* Сводка */}
@@ -105,7 +105,7 @@ export function StatsView({ state, userId, currency }: StatsViewProps) {
         <div className="font-[family-name:var(--font-display)] text-xl font-bold text-white tabular-nums">
           {formatMoney(summary.avgEarnedPerActiveDay, currency)}
         </div>
-        <div className="text-xs text-white/40 mt-0.5">
+        <div className="text-xs text-white/55 mt-0.5">
           Активных дней: {summary.activeDays}
         </div>
       </div>
@@ -114,7 +114,7 @@ export function StatsView({ state, userId, currency }: StatsViewProps) {
       <div className="rounded-2xl p-4 bg-white/5 border border-white/10">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-bold text-white">Доходы и расходы</h3>
-          <span className="text-xs text-white/40">{RANGE} дней</span>
+          <span className="text-xs text-white/55">{RANGE} дней</span>
         </div>
         <div className="flex items-end justify-between gap-1 h-32">
           {buckets.map((b) => (
@@ -248,7 +248,7 @@ function SummaryCard({
     <div className="rounded-xl p-3 bg-white/5 border border-white/10 text-center">
       <div className="flex justify-center mb-1">{icon}</div>
       <div className={`font-bold tabular-nums text-sm ${color}`}>{value}</div>
-      <div className="text-[10px] text-white/40 mt-0.5">{label}</div>
+      <div className="text-[10px] text-white/55 mt-0.5">{label}</div>
     </div>
   )
 }

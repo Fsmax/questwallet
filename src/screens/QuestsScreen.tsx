@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, Sparkles } from 'lucide-react'
 import { useAppState } from '../state/AppStateContext'
+import { useConfirm } from '../components/ConfirmProvider'
 import { QuestCard } from '../quests/QuestCard'
 import { QuestForm, type QuestFormValues } from '../quests/QuestForm'
 import { Modal } from '../components/Modal'
@@ -12,6 +13,7 @@ type Editing = { mode: 'new' } | { mode: 'edit'; task: Task } | null
 
 export function QuestsScreen() {
   const { state, earn, cancel, addTask, editTask, deleteTask } = useAppState()
+  const confirm = useConfirm()
   const [editing, setEditing] = useState<Editing>(null)
 
   if (!state) return null
@@ -25,10 +27,11 @@ export function QuestsScreen() {
     setEditing(null)
   }
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (editing?.mode !== 'edit') return
-    if (confirm('Удалить квест? Баллы за прошлые выполнения останутся.')) {
-      deleteTask(editing.task.id)
+    const taskId = editing.task.id
+    if (await confirm({ message: 'Удалить квест? Баллы за прошлые выполнения останутся.', danger: true })) {
+      deleteTask(taskId)
       setEditing(null)
     }
   }

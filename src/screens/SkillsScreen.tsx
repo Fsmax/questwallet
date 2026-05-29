@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, Sparkles } from 'lucide-react'
 import { useAppState } from '../state/AppStateContext'
+import { useConfirm } from '../components/ConfirmProvider'
 import { SkillCard } from '../skills/SkillCard'
 import { SkillForm, type SkillFormValues } from '../skills/SkillForm'
 import { SkillTaskForm, type SkillTaskFormValues } from '../skills/SkillTaskForm'
@@ -27,6 +28,7 @@ export function SkillsScreen() {
     deleteSkillTask,
     loadSeedSkills,
   } = useAppState()
+  const confirm = useConfirm()
   const [skillEditing, setSkillEditing] = useState<SkillEditing>(null)
   const [taskEditing, setTaskEditing] = useState<TaskEditing>(null)
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set())
@@ -51,11 +53,14 @@ export function SkillsScreen() {
     setSkillEditing(null)
   }
 
-  const handleDeleteSkill = () => {
+  const handleDeleteSkill = async () => {
     if (skillEditing?.mode !== 'edit') return
     const skill = skillEditing.skill
     if (
-      confirm(`Удалить навык «${skill.title}»? Все его задания тоже удалятся. Деньги и XP останутся.`)
+      await confirm({
+        message: `Удалить навык «${skill.title}»? Все его задания тоже удалятся. Деньги и XP останутся.`,
+        danger: true,
+      })
     ) {
       deleteSkill(skill.id)
       setSkillEditing(null)
@@ -71,10 +76,11 @@ export function SkillsScreen() {
     setTaskEditing(null)
   }
 
-  const handleDeleteTask = () => {
+  const handleDeleteTask = async () => {
     if (taskEditing?.mode !== 'edit') return
-    if (confirm('Удалить задание? Деньги и XP за прошлые выполнения останутся.')) {
-      deleteSkillTask(taskEditing.task.id)
+    const taskId = taskEditing.task.id
+    if (await confirm({ message: 'Удалить задание? Деньги и XP за прошлые выполнения останутся.', danger: true })) {
+      deleteSkillTask(taskId)
       setTaskEditing(null)
     }
   }

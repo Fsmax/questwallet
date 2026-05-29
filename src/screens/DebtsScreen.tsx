@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import { Plus, HandCoins, Landmark } from 'lucide-react'
 import { useAppState } from '../state/AppStateContext'
+import { useConfirm } from '../components/ConfirmProvider'
 import { DebtCard } from '../debts/DebtCard'
 import { DebtForm, type DebtFormValues } from '../debts/DebtForm'
 import { AmountDialog } from '../goals/AmountDialog'
@@ -14,6 +15,7 @@ type Editing = { mode: 'new' } | { mode: 'edit'; debt: Debt } | null
 
 export function DebtsScreen() {
   const { state, addDebt, repayDebt, editDebt, deleteDebt } = useAppState()
+  const confirm = useConfirm()
   const [editing, setEditing] = useState<Editing>(null)
   const [repaying, setRepaying] = useState<Debt | null>(null)
 
@@ -47,11 +49,16 @@ export function DebtsScreen() {
     setEditing(null)
   }
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (editing?.mode !== 'edit') return
     const debt = editing.debt
     setEditing(null)
-    if (confirm(`Удалить долг «${debt.person}»? Прошлые операции останутся в истории, баланс не изменится.`)) {
+    if (
+      await confirm({
+        message: `Удалить долг «${debt.person}»? Прошлые операции останутся в истории, баланс не изменится.`,
+        danger: true,
+      })
+    ) {
       deleteDebt(debt.id)
     }
   }
@@ -184,7 +191,7 @@ export function DebtsScreen() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <div className="text-xs uppercase tracking-wide text-white/40 font-bold mb-2 px-1">{title}</div>
+      <div className="text-xs uppercase tracking-wide text-white/55 font-bold mb-2 px-1">{title}</div>
       <div className="space-y-3">{children}</div>
     </div>
   )

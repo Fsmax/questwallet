@@ -29,7 +29,7 @@ export function DayProgress({
           <span className={allDone ? 'text-[var(--color-emerald-quest)] font-bold' : 'text-white'}>
             {done}
           </span>
-          <span className="text-white/40"> / {total}</span>
+          <span className="text-white/55"> / {total}</span>
         </div>
       </div>
       <div className="h-2 rounded-full bg-white/10 overflow-hidden">

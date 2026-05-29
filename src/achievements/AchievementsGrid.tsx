@@ -20,7 +20,7 @@ export function AchievementsGrid() {
   return (
     <div className="rounded-2xl p-4 bg-white/5 border border-white/10">
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-sm uppercase tracking-wide text-white/40 font-bold">Достижения</h2>
+        <h2 className="text-sm uppercase tracking-wide text-white/55 font-bold">Достижения</h2>
         <span className="text-sm font-bold text-[var(--color-gold)] tabular-nums">
           {unlockedCount} / {views.length}
         </span>

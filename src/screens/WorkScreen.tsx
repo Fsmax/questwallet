@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, Briefcase, TrendingUp } from 'lucide-react'
 import { useAppState } from '../state/AppStateContext'
+import { useConfirm } from '../components/ConfirmProvider'
 import { WorkTaskRow } from '../work/WorkTaskRow'
 import { WorkTaskForm, type WorkTaskFormValues } from '../work/WorkTaskForm'
 import { RecurringForm, type RecurringFormValues } from '../settings/RecurringForm'
@@ -26,6 +27,7 @@ export function WorkScreen() {
     deleteRecurring,
     chargeRecurring,
   } = useAppState()
+  const confirm = useConfirm()
   const [editingTask, setEditingTask] = useState<EditingTask>(null)
   const [editingIncome, setEditingIncome] = useState<EditingIncome>(null)
 
@@ -66,11 +68,13 @@ export function WorkScreen() {
     else addRecurring(values)
     setEditingIncome(null)
   }
-  const handleIncomeDelete = () => {
+  const handleIncomeDelete = async () => {
     if (editingIncome?.mode !== 'edit') return
     const rec = editingIncome.rec
     setEditingIncome(null)
-    if (confirm(`Удалить источник дохода «${rec.title}»?`)) deleteRecurring(rec.id)
+    if (await confirm({ message: `Удалить источник дохода «${rec.title}»?`, danger: true })) {
+      deleteRecurring(rec.id)
+    }
   }
 
   return (
@@ -177,7 +181,7 @@ export function WorkScreen() {
                   className="flex-1 min-w-0 text-left"
                 >
                   <div className="text-white text-sm truncate font-semibold">{r.title}</div>
-                  <div className="text-xs text-white/40">{r.dayOfMonth}-го числа · доход</div>
+                  <div className="text-xs text-white/55">{r.dayOfMonth}-го числа · доход</div>
                 </button>
                 <div className="font-bold tabular-nums text-sm text-[var(--color-emerald-quest)]">
                   +{formatMoney(r.amount, state.currency)}

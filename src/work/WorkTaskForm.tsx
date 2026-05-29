@@ -101,7 +101,7 @@ export function WorkTaskForm({ initial, onSubmit, onDelete }: WorkTaskFormProps)
           className="w-full bg-black/30 border border-white/10 rounded-xl px-3 py-3 text-white tabular-nums focus:border-[var(--color-gold)]/50 focus:outline-none transition"
           placeholder="0"
         />
-        <span className="text-xs text-white/40 mt-1 block">
+        <span className="text-xs text-white/55 mt-1 block">
           При выполнении эта сумма зачисляется в кошелёк.
         </span>
       </label>

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Plus, Trash2 } from 'lucide-react'
 import { useAppState } from '../state/AppStateContext'
+import { useConfirm } from '../components/ConfirmProvider'
 import { SettingsCard } from './SettingsCard'
 import { Modal } from '../components/Modal'
 import { formatMoney } from '../lib/format'
@@ -8,6 +9,7 @@ import type { ExpenseCategory } from '../types'
 
 export function CategoriesSection() {
   const { state, addCategory, editCategory, deleteCategory } = useAppState()
+  const confirm = useConfirm()
   const [newEmoji, setNewEmoji] = useState('📦')
   const [newTitle, setNewTitle] = useState('')
   const [editing, setEditing] = useState<ExpenseCategory | null>(null)
@@ -37,14 +39,14 @@ export function CategoriesSection() {
             <div className="flex-1 min-w-0">
               <div className="text-white text-sm truncate">{c.title}</div>
               {(c.monthlyLimit ?? 0) > 0 && (
-                <div className="text-xs text-white/40 tabular-nums">
+                <div className="text-xs text-white/55 tabular-nums">
                   бюджет {formatMoney(c.monthlyLimit ?? 0, state.currency)}/мес
                 </div>
               )}
             </div>
           </button>
         ))}
-        {list.length === 0 && <span className="text-xs text-white/40">Категорий пока нет</span>}
+        {list.length === 0 && <span className="text-xs text-white/55">Категорий пока нет</span>}
       </div>
 
       <div className="flex gap-2">
@@ -87,9 +89,16 @@ export function CategoriesSection() {
               editCategory(editing.id, patch)
               setEditing(null)
             }}
-            onDelete={() => {
-              if (confirm(`Удалить категорию «${editing.title}»? Прошлые траты сохранятся, но потеряют категорию.`)) {
-                deleteCategory(editing.id)
+            onDelete={async () => {
+              const cat = editing
+              if (!cat) return
+              if (
+                await confirm({
+                  message: `Удалить категорию «${cat.title}»? Прошлые траты сохранятся, но потеряют категорию.`,
+                  danger: true,
+                })
+              ) {
+                deleteCategory(cat.id)
                 setEditing(null)
               }
             }}

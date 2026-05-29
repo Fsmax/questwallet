@@ -208,7 +208,7 @@ function EmailInput({ value, onChange }: { value: string; onChange: (v: string) 
     <label className="block">
       <span className="text-sm text-white/70 font-semibold mb-1.5 block">Email</span>
       <div className="relative">
-        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" size={18} />
+        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-white/55" size={18} />
         <input
           type="email"
           required
@@ -242,7 +242,7 @@ function PasswordInput({
     <label className="block">
       <span className="text-sm text-white/70 font-semibold mb-1.5 block">{label}</span>
       <div className="relative">
-        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" size={18} />
+        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-white/55" size={18} />
         <input
           type={show ? 'text' : 'password'}
           required
@@ -255,7 +255,7 @@ function PasswordInput({
         <button
           type="button"
           onClick={toggleShow}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70 transition"
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-white/55 hover:text-white/70 transition"
         >
           {show ? <EyeOff size={18} /> : <Eye size={18} />}
         </button>
