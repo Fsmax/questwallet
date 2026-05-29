@@ -129,3 +129,46 @@ export function categoryBreakdown(
   }
   return slices.sort((a, b) => b.total - a.total)
 }
+
+export interface BudgetSlice {
+  id: string
+  title: string
+  emoji: string
+  limit: number
+  spent: number
+  ratio: number // потрачено / лимит
+  over: boolean
+}
+
+/** Начало месяца ("YYYY-MM") как timestamp. */
+export function monthStartTimestamp(month: string): number {
+  return new Date(`${month}-01T00:00:00`).getTime()
+}
+
+/**
+ * Статус бюджетов: для категорий с лимитом — сколько потрачено за период
+ * (обычно с начала месяца), доля и факт превышения. По убыванию заполненности.
+ */
+export function budgetStatus(
+  transactions: Transaction[],
+  categories: ExpenseCategory[],
+  sinceTimestamp: number,
+): BudgetSlice[] {
+  const withLimit = categories.filter((c) => (c.monthlyLimit ?? 0) > 0)
+  if (withLimit.length === 0) return []
+
+  const spentById = new Map<string, number>()
+  for (const tx of transactions) {
+    if (tx.type !== 'spend' || !tx.category) continue
+    if (tx.timestamp < sinceTimestamp) continue
+    spentById.set(tx.category, (spentById.get(tx.category) ?? 0) + tx.amount)
+  }
+
+  return withLimit
+    .map((c) => {
+      const limit = c.monthlyLimit ?? 0
+      const spent = spentById.get(c.id) ?? 0
+      return { id: c.id, title: c.title, emoji: c.emoji, limit, spent, ratio: spent / limit, over: spent > limit }
+    })
+    .sort((a, b) => b.ratio - a.ratio)
+}

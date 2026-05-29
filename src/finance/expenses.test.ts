@@ -57,6 +57,7 @@ const FOOD: ExpenseCategory = { id: 'food', title: 'Еда', emoji: '🍔', orde
 function makeRecurring(over: Partial<RecurringExpense> = {}): RecurringExpense {
   return {
     id: 'r1',
+    kind: 'expense',
     title: 'Аренда',
     emoji: '🏠',
     amount: 1000,
@@ -111,7 +112,7 @@ describe('регулярные расходы', () => {
   it('добавляет с валидным днём', () => {
     const r = applyAddRecurring(
       makeState(),
-      { title: 'Netflix', emoji: '🎬', amount: 500, dayOfMonth: 10, category: null },
+      { kind: 'expense', title: 'Netflix', emoji: '🎬', amount: 500, dayOfMonth: 10, category: null },
       NOW,
     )
     expect(r.recurringExpenses).toHaveLength(1)
@@ -122,7 +123,7 @@ describe('регулярные расходы', () => {
     expect(() =>
       applyAddRecurring(
         makeState(),
-        { title: 'X', emoji: '🔁', amount: 100, dayOfMonth: 31, category: null },
+        { kind: 'expense', title: 'X', emoji: '🔁', amount: 100, dayOfMonth: 31, category: null },
         NOW,
       ),
     ).toThrow(FinanceError)
@@ -162,6 +163,13 @@ describe('applyChargeRecurring', () => {
   it('недостаточно денег — ошибка', () => {
     const s = makeState({ balance: 100, recurringExpenses: [makeRecurring({ amount: 1000 })] })
     expect(() => applyChargeRecurring(s, 'r1', NOW)).toThrow(FinanceError)
+  })
+
+  it('доход зачисляет deposit и не требует баланса', () => {
+    const s = makeState({ balance: 0, recurringExpenses: [makeRecurring({ kind: 'income', amount: 3000 })] })
+    const { state, tx } = applyChargeRecurring(s, 'r1', NOW)
+    expect(state.balance).toBe(3000)
+    expect(tx.type).toBe('deposit')
   })
 })
 

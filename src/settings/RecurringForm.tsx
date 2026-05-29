@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { Trash2 } from 'lucide-react'
-import type { ExpenseCategory, RecurringExpense } from '../types'
+import type { ExpenseCategory, RecurringExpense, RecurringKind } from '../types'
 
 const EMOJI_QUICK = ['🔁', '🏠', '📱', '🌐', '💡', '🚗', '🎵', '🎬', '🏋️', '💳', '🧾', '📦']
+const EMOJI_INCOME = ['💰', '💵', '🏦', '💼', '📈', '🎁', '🪙', '💸']
 
 export interface RecurringFormValues {
+  kind: RecurringKind
   title: string
   emoji: string
   amount: number
@@ -20,6 +22,7 @@ interface RecurringFormProps {
 }
 
 export function RecurringForm({ initial, categories, onSubmit, onDelete }: RecurringFormProps) {
+  const [kind, setKind] = useState<RecurringKind>(initial?.kind ?? 'expense')
   const [title, setTitle] = useState(initial?.title ?? '')
   const [emoji, setEmoji] = useState(initial?.emoji ?? '🔁')
   const [amount, setAmount] = useState<string>(initial?.amount.toString() ?? '')
@@ -28,6 +31,8 @@ export function RecurringForm({ initial, categories, onSubmit, onDelete }: Recur
   const [err, setErr] = useState<string | null>(null)
 
   const sorted = [...categories].sort((a, b) => a.order - b.order)
+  const isIncome = kind === 'income'
+  const emojiQuick = isIncome ? EMOJI_INCOME : EMOJI_QUICK
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -42,16 +47,40 @@ export function RecurringForm({ initial, categories, onSubmit, onDelete }: Recur
     if (!Number.isInteger(dayNum) || dayNum < 1 || dayNum > 28) return setErr('День месяца: от 1 до 28')
 
     onSubmit({
+      kind,
       title: trimmedTitle,
-      emoji: emoji.trim() || '🔁',
+      emoji: emoji.trim() || (isIncome ? '💰' : '🔁'),
       amount: amountNum,
       dayOfMonth: dayNum,
-      category: category && sorted.some((c) => c.id === category) ? category : null,
+      category: !isIncome && category && sorted.some((c) => c.id === category) ? category : null,
     })
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {!initial && (
+        <div className="flex bg-black/30 rounded-xl p-1 gap-1">
+          <button
+            type="button"
+            onClick={() => setKind('expense')}
+            className={`flex-1 py-2 rounded-lg text-sm font-bold transition ${
+              !isIncome ? 'bg-[var(--color-coral)] text-white' : 'text-white/60 hover:text-white'
+            }`}
+          >
+            Расход
+          </button>
+          <button
+            type="button"
+            onClick={() => setKind('income')}
+            className={`flex-1 py-2 rounded-lg text-sm font-bold transition ${
+              isIncome ? 'bg-[var(--color-emerald-quest)] text-[var(--color-bg-deep)]' : 'text-white/60 hover:text-white'
+            }`}
+          >
+            Доход
+          </button>
+        </div>
+      )}
+
       <label className="block">
         <span className="text-sm text-white/70 font-semibold mb-1.5 block">Название</span>
         <input
@@ -75,7 +104,7 @@ export function RecurringForm({ initial, categories, onSubmit, onDelete }: Recur
             maxLength={4}
             className="w-14 bg-black/30 border border-white/10 rounded-xl px-2 py-2 text-white text-xl text-center focus:border-[var(--color-gold)]/50 focus:outline-none transition"
           />
-          {EMOJI_QUICK.map((e) => (
+          {emojiQuick.map((e) => (
             <button
               key={e}
               type="button"
@@ -117,7 +146,7 @@ export function RecurringForm({ initial, categories, onSubmit, onDelete }: Recur
         </label>
       </div>
 
-      {sorted.length > 0 && (
+      {!isIncome && sorted.length > 0 && (
         <div>
           <span className="text-sm text-white/70 font-semibold mb-1.5 block">Категория</span>
           <div className="flex flex-wrap gap-1.5">

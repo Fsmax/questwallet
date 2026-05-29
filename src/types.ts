@@ -68,19 +68,24 @@ export interface ExpenseCategory {
   title: string
   emoji: string
   order: number
+  monthlyLimit?: number // бюджет на месяц (если задан)
 }
 
-/** Регулярный (повторяющийся) расход: подписки, аренда, кредит. */
+/** Вид регулярной операции. */
+export type RecurringKind = 'expense' | 'income'
+
+/** Регулярная операция: подписки/аренда/кредит (расход) или зарплата (доход). */
 export interface RecurringExpense {
   id: string
+  kind: RecurringKind
   title: string
   emoji: string
   amount: number
-  dayOfMonth: number // 1..28 — день месяца списания
-  category: string | null // id категории
+  dayOfMonth: number // 1..28 — день месяца
+  category: string | null // id категории (для расходов)
   order: number
   createdAt: number
-  lastChargedMonth: string | null // "YYYY-MM" — последний месяц, за который списано
+  lastChargedMonth: string | null // "YYYY-MM" — последний месяц, за который проведено
 }
 
 /** Долг: либо мне должны (owed_to_me), либо должен я (i_owe). */

@@ -1,4 +1,4 @@
-import type { AppState, ExpenseCategory, RecurringExpense, Transaction } from '../types'
+import type { AppState, ExpenseCategory, RecurringExpense, RecurringKind, Transaction } from '../types'
 import { MAX_TRANSACTIONS_IN_STATE } from '../types'
 import { getCurrentDay } from '../lib/dates'
 import { FinanceError, validateAmount, validateLabel, type ApplyResult } from './finance'
@@ -41,12 +41,13 @@ export function applyAddCategory(
 export function applyEditCategory(
   state: AppState,
   id: string,
-  patch: Partial<Pick<ExpenseCategory, 'title' | 'emoji' | 'order'>>,
+  patch: Partial<Pick<ExpenseCategory, 'title' | 'emoji' | 'order' | 'monthlyLimit'>>,
 ): AppState {
   if (!state.expenseCategories.some((c) => c.id === id)) {
     throw new FinanceError('NOT_FOUND', 'Категория не найдена')
   }
   if (patch.title !== undefined) validateLabel(patch.title)
+  if (patch.monthlyLimit !== undefined) validateAmount(patch.monthlyLimit)
   return {
     ...state,
     expenseCategories: state.expenseCategories.map((c) =>
@@ -82,7 +83,14 @@ function validateDayOfMonth(day: number): void {
 
 export function applyAddRecurring(
   state: AppState,
-  input: { title: string; emoji: string; amount: number; dayOfMonth: number; category: string | null },
+  input: {
+    kind: RecurringKind
+    title: string
+    emoji: string
+    amount: number
+    dayOfMonth: number
+    category: string | null
+  },
   now: Date,
 ): AppState {
   validateLabel(input.title)
@@ -95,11 +103,12 @@ export function applyAddRecurring(
       ...state.recurringExpenses,
       {
         id: newId(),
+        kind: input.kind,
         title: input.title.trim(),
-        emoji: input.emoji.trim() || '🔁',
+        emoji: input.emoji.trim() || (input.kind === 'income' ? '💰' : '🔁'),
         amount: input.amount,
         dayOfMonth: input.dayOfMonth,
-        category: input.category,
+        category: input.kind === 'expense' ? input.category : null,
         order: maxOrder + 1,
         createdAt: now.getTime(),
         lastChargedMonth: null,
@@ -140,23 +149,26 @@ export function applyDeleteRecurring(state: AppState, id: string): AppState {
  */
 export function applyChargeRecurring(state: AppState, id: string, now: Date): ApplyResult {
   const rec = state.recurringExpenses.find((r) => r.id === id)
-  if (!rec) throw new FinanceError('NOT_FOUND', 'Регулярный расход не найден')
+  if (!rec) throw new FinanceError('NOT_FOUND', 'Регулярная операция не найдена')
   validateAmount(rec.amount)
-  if (rec.amount > state.balance) {
-    throw new FinanceError('INSUFFICIENT_BALANCE', 'Недостаточно денег в кошельке')
-  }
   const month = currentMonth(state, now)
   if (rec.lastChargedMonth === month) {
-    throw new FinanceError('ALREADY_CHARGED', 'Этот расход уже списан в этом месяце')
+    throw new FinanceError('ALREADY_CHARGED', 'Уже проведено в этом месяце')
   }
+
+  const isIncome = rec.kind === 'income'
+  if (!isIncome && rec.amount > state.balance) {
+    throw new FinanceError('INSUFFICIENT_BALANCE', 'Недостаточно денег в кошельке')
+  }
+
   const category =
-    rec.category && state.expenseCategories.some((c) => c.id === rec.category)
+    !isIncome && rec.category && state.expenseCategories.some((c) => c.id === rec.category)
       ? rec.category
       : undefined
 
   const tx: Transaction = {
     id: newId(),
-    type: 'spend',
+    type: isIncome ? 'deposit' : 'spend',
     amount: rec.amount,
     label: rec.title,
     timestamp: now.getTime(),
@@ -165,7 +177,7 @@ export function applyChargeRecurring(state: AppState, id: string, now: Date): Ap
 
   const newState: AppState = {
     ...state,
-    balance: state.balance - rec.amount,
+    balance: isIncome ? state.balance + rec.amount : state.balance - rec.amount,
     recurringExpenses: state.recurringExpenses.map((r) =>
       r.id === id ? { ...r, lastChargedMonth: month } : r,
     ),

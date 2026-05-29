@@ -63,7 +63,7 @@ describe('convertState', () => {
       currency: 'USD',
       balance: 400,
       debts: [{ id: 'd', direction: 'i_owe', person: 'A', emoji: '💳', principal: 10, paid: 2.5, note: '', dueDate: null, order: 0, createdAt: 0, settledAt: null }],
-      recurringExpenses: [{ id: 'r', title: 'Net', emoji: '🎬', amount: 5, dayOfMonth: 1, category: null, order: 0, createdAt: 0, lastChargedMonth: null }],
+      recurringExpenses: [{ id: 'r', kind: 'expense', title: 'Net', emoji: '🎬', amount: 5, dayOfMonth: 1, category: null, order: 0, createdAt: 0, lastChargedMonth: null }],
     })
     const r = convertState(s, 'сум', 12500)
     expect(r.currency).toBe('сум')

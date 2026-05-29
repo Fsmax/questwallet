@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import type { AppState, Currency, DebtDirection, RemindersConfig, Transaction } from '../types'
+import type { AppState, Currency, DebtDirection, RecurringKind, RemindersConfig, Transaction } from '../types'
 import { useAuth } from '../auth/useAuth'
 import {
   loadState,
@@ -111,10 +111,10 @@ export interface AppStateApi {
   loadSeedSkills: () => void
   // Категории расходов
   addCategory: (input: { title: string; emoji: string }) => void
-  editCategory: (id: string, patch: { title?: string; emoji?: string; order?: number }) => void
+  editCategory: (id: string, patch: { title?: string; emoji?: string; order?: number; monthlyLimit?: number }) => void
   deleteCategory: (id: string) => void
-  // Регулярные расходы
-  addRecurring: (input: { title: string; emoji: string; amount: number; dayOfMonth: number; category: string | null }) => void
+  // Регулярные операции (расход/доход)
+  addRecurring: (input: { kind: RecurringKind; title: string; emoji: string; amount: number; dayOfMonth: number; category: string | null }) => void
   editRecurring: (id: string, patch: { title?: string; emoji?: string; amount?: number; dayOfMonth?: number; category?: string | null; order?: number }) => void
   deleteRecurring: (id: string) => void
   chargeRecurring: (id: string) => void

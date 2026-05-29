@@ -80,6 +80,15 @@ export function ensureDefaults(state: AppState): AppState {
   if (!Array.isArray(next.recurringExpenses)) {
     next = { ...next, recurringExpenses: [] }
     changed = true
+  } else if (next.recurringExpenses.some((r) => r.kind === undefined)) {
+    // схема v2 → расширенная: старые регулярные расходы становятся kind:'expense'
+    next = {
+      ...next,
+      recurringExpenses: next.recurringExpenses.map((r) =>
+        r.kind === undefined ? { ...r, kind: 'expense' } : r,
+      ),
+    }
+    changed = true
   }
   if (!Array.isArray(next.debts)) {
     next = { ...next, debts: [] }

@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Loader2, TrendingUp, TrendingDown, PiggyBank } from 'lucide-react'
 import type { AppState, Currency, Transaction } from '../types'
-import { aggregateByDay, summarize, categoryBreakdown } from '../lib/stats'
+import { aggregateByDay, summarize, categoryBreakdown, budgetStatus, monthStartTimestamp } from '../lib/stats'
 import { formatMoneyShort, formatMoney } from '../lib/format'
+import { getCurrentDay } from '../lib/dates'
 import { loadTransactions } from '../storage/storage'
 
 interface StatsViewProps {
@@ -47,6 +48,14 @@ export function StatsView({ state, userId, currency }: StatsViewProps) {
   const categories = useMemo(
     () => (txs ? categoryBreakdown(txs, state.expenseCategories) : []),
     [txs, state.expenseCategories],
+  )
+  const monthStart = useMemo(
+    () => monthStartTimestamp(getCurrentDay(new Date(), state.timezone, state.dayResetHour).slice(0, 7)),
+    [state.timezone, state.dayResetHour],
+  )
+  const budgets = useMemo(
+    () => (txs ? budgetStatus(txs, state.expenseCategories, monthStart) : []),
+    [txs, state.expenseCategories, monthStart],
   )
 
   if (!txs || !summary) {
@@ -133,6 +142,39 @@ export function StatsView({ state, userId, currency }: StatsViewProps) {
           </span>
         </div>
       </div>
+
+      {/* Бюджеты на месяц */}
+      {budgets.length > 0 && (
+        <div className="rounded-2xl p-4 bg-white/5 border border-white/10">
+          <h3 className="text-sm font-bold text-white mb-3">Бюджеты (этот месяц)</h3>
+          <div className="space-y-2.5">
+            {budgets.map((b) => (
+              <div key={b.id}>
+                <div className="flex items-center justify-between text-sm mb-1">
+                  <span className="text-white/80 truncate">
+                    {b.emoji} {b.title}
+                  </span>
+                  <span
+                    className={`font-bold tabular-nums ml-2 ${
+                      b.over ? 'text-[var(--color-coral)]' : 'text-white/70'
+                    }`}
+                  >
+                    {formatMoneyShort(b.spent, currency)} / {formatMoneyShort(b.limit, currency)}
+                  </span>
+                </div>
+                <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
+                  <div
+                    className={`h-full rounded-full ${
+                      b.over ? 'bg-[var(--color-coral)]' : 'bg-[var(--color-emerald-quest)]'
+                    }`}
+                    style={{ width: `${Math.min(100, Math.max(2, b.ratio * 100))}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Расходы по категориям */}
       {categories.length > 0 && (

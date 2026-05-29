@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { aggregateByDay, summarize } from './stats'
-import type { Transaction } from '../types'
+import { aggregateByDay, summarize, categoryBreakdown, budgetStatus } from './stats'
+import type { Transaction, ExpenseCategory } from '../types'
 
 const TZ = 'Asia/Tashkent'
 const NOW = new Date('2026-05-28T09:00:00Z') // 14:00 Tashkent → день 2026-05-28
@@ -85,5 +85,48 @@ describe('summarize', () => {
     expect(s.totalEarned).toBe(0)
     expect(s.avgEarnedPerActiveDay).toBe(0)
     expect(s.activeDays).toBe(0)
+  })
+})
+
+const CATS: ExpenseCategory[] = [
+  { id: 'food', title: 'Еда', emoji: '🍔', order: 0, monthlyLimit: 1000 },
+  { id: 'fun', title: 'Развлечения', emoji: '🎬', order: 1 },
+]
+
+describe('categoryBreakdown', () => {
+  it('группирует траты по категориям, без категории — отдельно', () => {
+    const txs = [
+      tx({ type: 'spend', amount: 300, category: 'food' }),
+      tx({ type: 'spend', amount: 200, category: 'food' }),
+      tx({ type: 'spend', amount: 100 }), // без категории
+      tx({ type: 'earn', amount: 999, category: 'food' }), // не трата — игнор
+    ]
+    const r = categoryBreakdown(txs, CATS)
+    expect(r[0].id).toBe('food')
+    expect(r[0].total).toBe(500)
+    expect(r.find((s) => s.id === '__none__')?.total).toBe(100)
+  })
+})
+
+describe('budgetStatus', () => {
+  it('считает только категории с лимитом и отмечает превышение', () => {
+    const txs = [
+      tx({ type: 'spend', amount: 1200, category: 'food' }),
+      tx({ type: 'spend', amount: 500, category: 'fun' }),
+    ]
+    const r = budgetStatus(txs, CATS, 0)
+    expect(r).toHaveLength(1) // только food имеет лимит
+    expect(r[0].spent).toBe(1200)
+    expect(r[0].over).toBe(true)
+  })
+
+  it('учитывает только траты с нужного момента', () => {
+    const txs = [
+      tx({ type: 'spend', amount: 800, category: 'food', timestamp: 1000 }),
+      tx({ type: 'spend', amount: 300, category: 'food', timestamp: 5000 }),
+    ]
+    const r = budgetStatus(txs, CATS, 2000)
+    expect(r[0].spent).toBe(300)
+    expect(r[0].over).toBe(false)
   })
 })
