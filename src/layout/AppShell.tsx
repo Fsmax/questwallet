@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   Home,
@@ -13,13 +13,28 @@ import {
   AlertCircle,
   X,
 } from 'lucide-react'
-import { DashboardScreen } from '../screens/DashboardScreen'
-import { QuestsScreen } from '../screens/QuestsScreen'
-import { SkillsScreen } from '../screens/SkillsScreen'
-import { GoalsScreen } from '../screens/GoalsScreen'
-import { WalletScreen } from '../screens/WalletScreen'
-import { DebtsScreen } from '../screens/DebtsScreen'
-import { SettingsScreen } from '../screens/SettingsScreen'
+// Экраны грузим лениво — каждый попадает в отдельный чанк, начальный бандл меньше.
+const DashboardScreen = lazy(() =>
+  import('../screens/DashboardScreen').then((m) => ({ default: m.DashboardScreen })),
+)
+const QuestsScreen = lazy(() =>
+  import('../screens/QuestsScreen').then((m) => ({ default: m.QuestsScreen })),
+)
+const SkillsScreen = lazy(() =>
+  import('../screens/SkillsScreen').then((m) => ({ default: m.SkillsScreen })),
+)
+const GoalsScreen = lazy(() =>
+  import('../screens/GoalsScreen').then((m) => ({ default: m.GoalsScreen })),
+)
+const WalletScreen = lazy(() =>
+  import('../screens/WalletScreen').then((m) => ({ default: m.WalletScreen })),
+)
+const DebtsScreen = lazy(() =>
+  import('../screens/DebtsScreen').then((m) => ({ default: m.DebtsScreen })),
+)
+const SettingsScreen = lazy(() =>
+  import('../screens/SettingsScreen').then((m) => ({ default: m.SettingsScreen })),
+)
 import { AppStateProvider, useAppState } from '../state/AppStateContext'
 import { calcLevel } from '../finance/game'
 import { LevelUpToast } from '../game/LevelUpToast'
@@ -139,13 +154,21 @@ function ShellInner() {
                 exit={{ opacity: 0, y: -4 }}
                 transition={{ duration: 0.18, ease: 'easeOut' }}
               >
-                {tab === 'home' && <DashboardScreen />}
-                {tab === 'quests' && <QuestsScreen />}
-                {tab === 'skills' && <SkillsScreen />}
-                {tab === 'goals' && <GoalsScreen />}
-                {tab === 'wallet' && <WalletScreen />}
-                {tab === 'debts' && <DebtsScreen />}
-                {tab === 'settings' && <SettingsScreen />}
+                <Suspense
+                  fallback={
+                    <div className="flex justify-center py-16">
+                      <Loader2 className="animate-spin text-[var(--color-gold)]" size={28} />
+                    </div>
+                  }
+                >
+                  {tab === 'home' && <DashboardScreen />}
+                  {tab === 'quests' && <QuestsScreen />}
+                  {tab === 'skills' && <SkillsScreen />}
+                  {tab === 'goals' && <GoalsScreen />}
+                  {tab === 'wallet' && <WalletScreen />}
+                  {tab === 'debts' && <DebtsScreen />}
+                  {tab === 'settings' && <SettingsScreen />}
+                </Suspense>
               </motion.div>
             </AnimatePresence>
           </div>
