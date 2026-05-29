@@ -222,6 +222,15 @@ export async function loadTransactions(
  */
 export async function resetState(userId: string): Promise<LoadResult> {
   const fresh = createInitialState()
+
+  // Чистим журнал транзакций, иначе «Статистика» (читает из БД) покажет старую
+  // историю при обнулённом балансе.
+  const { error: txError } = await supabase
+    .from('transactions')
+    .delete()
+    .eq('user_id', userId)
+  if (txError) throw txError
+
   const { data, error } = await supabase
     .from('user_state')
     .update({ state: fresh, state_version: 1 })

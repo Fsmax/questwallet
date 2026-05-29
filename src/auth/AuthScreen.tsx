@@ -1,13 +1,20 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Sparkles, Mail, Lock, ArrowLeft, Eye, EyeOff, Loader2 } from 'lucide-react'
 import { useAuth } from './useAuth'
 import { translateAuthError } from './translateAuthError'
 
 type Mode = 'signin' | 'signup' | 'reset-request' | 'reset-confirm' | 'reset-sent'
 
+// Если в URL ?reset=1 — стартуем сразу в режиме установки нового пароля
+function initialMode(): Mode {
+  if (typeof window === 'undefined') return 'signin'
+  const params = new URLSearchParams(window.location.search)
+  return params.get('reset') === '1' ? 'reset-confirm' : 'signin'
+}
+
 export function AuthScreen() {
   const auth = useAuth()
-  const [mode, setMode] = useState<Mode>('signin')
+  const [mode, setMode] = useState<Mode>(initialMode)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [passwordConfirm, setPasswordConfirm] = useState('')
@@ -15,14 +22,6 @@ export function AuthScreen() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [info, setInfo] = useState<string | null>(null)
-
-  // Если в URL ?reset=1 — переключиться в режим установки нового пароля
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    if (params.get('reset') === '1') {
-      setMode('reset-confirm')
-    }
-  }, [])
 
   const reset = () => {
     setError(null)

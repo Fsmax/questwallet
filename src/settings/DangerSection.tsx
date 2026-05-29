@@ -38,7 +38,7 @@ export function DangerSection() {
         Полный сброс прогресса
       </button>
       <p className="text-xs text-white/40 mt-2">
-        Удалит весь прогресс и вернёт seed-данные. Транзакции в истории останутся.
+        Удалит весь прогресс, историю транзакций и вернёт seed-данные.
       </p>
 
       <Modal

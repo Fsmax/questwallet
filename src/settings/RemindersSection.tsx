@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Bell, BellOff } from 'lucide-react'
 import { useAppState } from '../state/AppStateContext'
 import { SettingsCard, SettingsRow } from './SettingsCard'
@@ -13,11 +13,7 @@ function detectPerm(): PermStatus {
 
 export function RemindersSection() {
   const { state, setReminders } = useAppState()
-  const [perm, setPerm] = useState<PermStatus>('unknown')
-
-  useEffect(() => {
-    setPerm(detectPerm())
-  }, [])
+  const [perm, setPerm] = useState<PermStatus>(detectPerm)
 
   if (!state) return null
   const r = state.reminders

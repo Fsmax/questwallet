@@ -91,6 +91,9 @@ export interface AppStateApi {
 
 const Ctx = createContext<AppStateApi | null>(null)
 
+// Контекст + хук + провайдер живут в одном файле сознательно; единственное последствие —
+// Fast Refresh иногда полностью перезагрузит модуль. На корректность не влияет.
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAppState(): AppStateApi {
   const ctx = useContext(Ctx)
   if (!ctx) throw new Error('useAppState must be used inside AppStateProvider')
@@ -104,21 +107,30 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<AppStatus>('loading')
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
-  const [achievementUnlocked, setAchievementUnlocked] = useState<string | null>(null)
+  // Очередь: показываем разблокированные достижения по очереди, а не теряем все кроме первого.
+  const [achievementQueue, setAchievementQueue] = useState<string[]>([])
 
+  // «Свежие» значения для колбэков сейвера/таймеров, которые живут вне рендера.
   const stateRef = useRef<AppState | null>(null)
   const versionRef = useRef(0)
-  stateRef.current = state
-  versionRef.current = version
+  useEffect(() => {
+    stateRef.current = state
+  }, [state])
+  useEffect(() => {
+    versionRef.current = version
+  }, [version])
 
   // ----- Debounced saver -----
   const saverRef = useRef<ReturnType<typeof createDebouncedSaver> | null>(null)
 
   useEffect(() => {
     if (!auth.user) {
+      // Сброс при выходе из аккаунта — синхронизация с внешним auth-состоянием.
+      /* eslint-disable react-hooks/set-state-in-effect */
       setState(null)
       setVersion(0)
       setStatus('loading')
+      /* eslint-enable react-hooks/set-state-in-effect */
       saverRef.current?.cancel()
       saverRef.current = null
       return
@@ -179,8 +191,18 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const userId = auth.user?.id
 
   const commit = useCallback((next: AppState) => {
-    setState(next)
-    saverRef.current?.save(next)
+    // Разблокировку достижений считаем здесь, при коммите, а не в отдельном эффекте:
+    // так нет каскадного ре-рендера и повторного сохранения в облако.
+    const fresh = newlyUnlocked(next)
+    const finalState =
+      fresh.length > 0
+        ? { ...next, unlockedAchievements: [...next.unlockedAchievements, ...fresh] }
+        : next
+    if (fresh.length > 0) {
+      setAchievementQueue((q) => [...q, ...fresh])
+    }
+    setState(finalState)
+    saverRef.current?.save(finalState)
   }, [])
 
   // Авто-сброс дня каждую минуту: если резет-граница прошла, обнуляем галочки задач без перезагрузки.
@@ -201,18 +223,6 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     const id = setInterval(tick, 60_000)
     return () => clearInterval(id)
   }, [status, commit])
-
-  // Авто-разблокировка достижений при изменении state
-  useEffect(() => {
-    if (!state) return
-    const fresh = newlyUnlocked(state)
-    if (fresh.length === 0) return
-    commit({
-      ...state,
-      unlockedAchievements: [...state.unlockedAchievements, ...fresh],
-    })
-    setAchievementUnlocked(fresh[0])
-  }, [state, commit])
 
   const commitWithTx = useCallback(
     (next: AppState, tx: Transaction | null) => {
@@ -252,8 +262,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       error,
       notice,
       clearNotice: () => setNotice(null),
-      achievementUnlocked,
-      clearAchievementToast: () => setAchievementUnlocked(null),
+      achievementUnlocked: achievementQueue[0] ?? null,
+      clearAchievementToast: () => setAchievementQueue((q) => q.slice(1)),
 
       earn: (taskId) => {
         safe(() => {
@@ -388,7 +398,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         }
       },
     }
-  }, [state, status, error, notice, achievementUnlocked, commit, commitWithTx, safe, userId])
+  }, [state, status, error, notice, achievementQueue, commit, commitWithTx, safe, userId])
 
   return <Ctx.Provider value={api}>{children}</Ctx.Provider>
 }

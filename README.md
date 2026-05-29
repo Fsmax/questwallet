@@ -33,6 +33,13 @@ npm run build    # production build
 - `src/components/` — общие UI-компоненты (Modal)
 - `src/lib/` — утилиты (даты, форматирование, seed-данные)
 
+## База данных
+
+Схема и политики безопасности — в `supabase/migrations/`. Безопасность приложения
+держится на **Row-Level Security**: клиент работает под публичным anon-ключом, поэтому
+RLS обязан быть включён, иначе любой пользователь получит доступ к чужим данным.
+Применить: `supabase db push` (или прогнать SQL вручную в SQL Editor).
+
 ## Деплой
 
 Vercel автоматически определяет Vite-проект. Добавь переменные `VITE_SUPABASE_URL` и `VITE_SUPABASE_ANON_KEY` в Project Settings → Environment Variables.

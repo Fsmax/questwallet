@@ -19,13 +19,13 @@ export function StatsView({ state, userId, currency }: StatsViewProps) {
 
   useEffect(() => {
     let cancelled = false
-    setErr(null)
     loadTransactions(userId, 1000, 0)
       .then((data) => {
         if (cancelled) return
         // Объединяем с тем что в state (на случай свежих, ещё не подгруженных)
         const seen = new Set(data.map((t) => t.id))
         const merged = [...data, ...state.transactions.filter((t) => !seen.has(t.id))]
+        setErr(null)
         setTxs(merged)
       })
       .catch((e) => {
